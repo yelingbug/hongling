@@ -37,6 +37,12 @@ func init() {
 		rotatelogs.WithMaxAge(7 * 24 *time.Hour))
 
 	logger := logrus.New()
+	logger.SetFormatter(&logrus.TextFormatter{
+		TimestampFormat: "2006/01/02 15:04:05",
+		DisableTimestamp: false,
+		FullTimestamp:true,
+	})
+	logger.SetOutput(os.Stdout)
 	logger.AddHook(lfshook.NewHook(
 		lfshook.WriterMap{
 			logrus.DebugLevel: forInfo,
