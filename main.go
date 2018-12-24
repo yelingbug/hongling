@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"com.hongling/utility"
+	"hongling/utility"
 	"os"
 	"gopkg.in/urfave/cli.v2"
 )
@@ -18,7 +18,7 @@ func main() {
 		Version:"1.0.beta",
 	}
 
-	app.Commands = []*cli.Command{utility.DrdsCommand}
+	app.Commands = []*cli.Command{utility.DrdsCommand, utility.ArchetypeCommand}
 
 	err := app.Run(os.Args)
 	if err != nil {
