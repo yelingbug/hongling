@@ -150,4 +150,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}*/
+
+	a := `asfdsadf%ssafasfasf`
+	fmt.Println(fmt.Sprintf(a, "1111"))
 }
