@@ -18,7 +18,7 @@ func main() {
 		Version:"1.0.beta",
 	}
 
-	app.Commands = []*cli.Command{utility.DrdsCommand, utility.ArchetypeCommand}
+	app.Commands = []*cli.Command{utility.DrdsCommand, utility.ArchetypeCommand, utility.ExecjavaCommand}
 
 	err := app.Run(os.Args)
 	if err != nil {
