@@ -15,24 +15,29 @@ import (
 
 var Logger *logrus.Entry
 
-// 初始化logger.
-func init() {
+var CacheDir = getCacheDir()
+
+func getCacheDir() string {
 	userdir, err := homedir.Dir()
 	if err != nil {
 		userdir = "./"
 	}
 
-	logdir := fmt.Sprintf("%s/.utility", userdir)
-	os.Mkdir(logdir, os.ModeDir|os.ModePerm)
+	return fmt.Sprintf("%s/.utility/", userdir)
+}
+
+// 初始化logger.
+func init() {
+	os.Mkdir(CacheDir, os.ModeDir|os.ModePerm)
 
 	//info和error分开
 	//info保存debug, info和warn level, error保存error和fatal level.
 	forInfo, _ := rotatelogs.New(
-		fmt.Sprintf("%s/info", logdir) + ".%Y%m%d",
+		fmt.Sprintf("%s/info", CacheDir) + ".%Y%m%d",
 		rotatelogs.WithRotationTime(1*time.Minute),
 		rotatelogs.WithMaxAge(7 * 24 *time.Hour))
 	forError, _ := rotatelogs.New(
-		fmt.Sprintf("%s/error", logdir) + ".%Y%m%d",
+		fmt.Sprintf("%s/error", CacheDir) + ".%Y%m%d",
 		rotatelogs.WithRotationTime(1*time.Minute),
 		rotatelogs.WithMaxAge(7 * 24 *time.Hour))
 

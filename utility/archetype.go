@@ -10,7 +10,6 @@ import (
 )
 
 const (
-	_DIR               = ".build/"
 	_FLAG_SPRING       = "spring"
 	_FLAG_SPRING_WEB   = "spring-web"
 	_FLAG_SPRING_BOOT   = "spring-boot"
@@ -443,7 +442,7 @@ type archetype_action interface {
 }
 
 func (aa *archetype_args) getRoot() string {
-	return _DIR + aa.name
+	return CacheDir + aa.name
 }
 
 func (aa *archetype_args) isSpring() bool {
@@ -549,10 +548,7 @@ func (aa *archetype_args) generateApplicationProperties() error {
 
 func (aa *archetype_args) generate() error {
 	//初始化项目目录
-	if err := createDir(_DIR); err != nil {
-		return err
-	}
-	name_ := _DIR + aa.name
+	name_ := CacheDir + aa.name
 	if err := createDir(name_); err != nil {
 		return err
 	}
