@@ -299,15 +299,15 @@ func execJava(c *cli.Context) error {
 		return nil
 	}
 
-	/*if err := pullProductionBranch(); err != nil {
-		Logger.Error("拉取production分之失败:[%s].", err)
+	if err := pullProductionBranch(); err != nil {
+		Logger.Error(fmt.Sprintf("拉取production分之失败:[%s].", err))
 		return err
 	}
 
 	if err := compile(); err != nil {
-		Logger.Error("编译项目失败:[%s].", err)
+		Logger.Error(fmt.Sprintf("编译项目失败:[%s].", err))
 		return err
-	}*/
+	}
 
 	if err := execute(c.Command.Name, env, rdirs, c.Args().First()); err != nil {
 		return err
@@ -406,48 +406,9 @@ func execute(command string, env string, rdirs string, classAs string) error {
 	// 1,如果有部分不同于缺省目录的服务器,格式为"<ip1|ip2...>:<dir>,<ip3|ip4...>:<dir>",比如"172.16.0.20:/home/opt/tomcat,172.16.0.11|172.16.0.12:/home/admin/tomcat"
 	// 2,如果所有的服务器的目录都不同于缺省目录,格式为"<dir>",比如"/home/opt/tomcat"
 	rdirsAfterSplitted := strings.Split(rdirs, ",")
-	rip2dir := make(map[string]string)
-
-	// 清理前后空格
-	rdirsAfterCleaned := make([]string, len(rdirsAfterSplitted))
-	for _, v := range rdirsAfterSplitted {
-		v = strings.TrimSpace(v)
-		if v == "" {
-			continue
-		}
-		rdirsAfterCleaned = append(rdirsAfterCleaned, v)
-	}
-
-	if len(rdirsAfterCleaned) == 0 {
-		return errors.New("指定的远程目录结构格式不合适,应该是<ip|ip...>:<dir>,<ip|ip...>:<dir>或者<dir>.")
-	} else if len(rdirsAfterCleaned) == 1 {
-		// 如果只有1个元素,说明是上面第2种情况
-		rip2dir["*"] = rdirsAfterCleaned[0]
-	} else {
-		// 否则,说明是上面第1种情况
-		for _, v := range rdirsAfterCleaned {
-			v_ := strings.Split(v, ":")
-			if len(v_) != 2 {
-				return errors.New(fmt.Sprintf("指定的远程目录结构%s不合适,应该是<ip|ip...>:<dir>.", v))
-			} else {
-				ips, dir := v_[0], v_[1]
-				ipsAfterSplitted := strings.Split(ips, "|")
-				for _, v__ := range ipsAfterSplitted {
-					v__ = strings.TrimSpace(v__)
-					if v__ == "" {
-						continue
-					} else if v__ == "*" {
-						return errors.New("IP不能为*.")
-					}
-
-					if vx, ok := rip2dir[v__]; ok {
-						return errors.New(fmt.Sprintf("存在相同ip[%s]指向不同的目录[%s/%s]存在.", v__, vx, dir))
-					} else {
-						rip2dir[v__] = dir
-					}
-				}
-			}
-		}
+	rip2dir, err_ := parseDirs(rdirsAfterSplitted)
+	if err_ != nil {
+		return err_
 	}
 
 	// 上载class文件到对应服务的集群部署目录
@@ -456,6 +417,56 @@ func execute(command string, env string, rdirs string, classAs string) error {
 	}
 
 	return nil
+}
+
+// 解析目录参数.
+func parseDirs(rdirsAfterSplitted []string) (map[string]string, error) {
+	rip2dir := make(map[string]string)
+	// 清理前后空格
+	rdirsAfterCleaned := make([]string, 0)
+	for _, v := range rdirsAfterSplitted {
+		v := strings.TrimSpace(v)
+		if v == "" {
+			continue
+		}
+
+		rdirsAfterCleaned = append(rdirsAfterCleaned, v)
+	}
+
+	if len(rdirsAfterCleaned) == 0 {
+		return nil, errors.New("指定的远程目录结构格式不合适,应该是<ip|ip...>:<dir>,<ip|ip...>:<dir>或者<dir>.")
+	} else if len(rdirsAfterCleaned) == 1 {
+		// 如果只有1个元素,说明是上面第2种情况
+		rip2dir["*"] = rdirsAfterCleaned[0]
+	} else {
+		// 否则,说明是上面第1种情况
+		for _, v := range rdirsAfterCleaned {
+			v_ := strings.Split(v, ":")
+
+			if len(v_) != 2 {
+				return nil, errors.New(fmt.Sprintf("指定的远程目录结构%s不合适,应该是<ip|ip...>:<dir>.", v))
+			} else {
+				ips, dir := v_[0], v_[1]
+				ipsAfterSplitted := strings.Split(ips, "|")
+				for _, v__ := range ipsAfterSplitted {
+					v__ = strings.TrimSpace(v__)
+					if v__ == "" {
+						continue
+					} else if v__ == "*" {
+						return nil, errors.New("IP不能为*.")
+					}
+
+					if vx, ok := rip2dir[v__]; ok {
+						return nil, errors.New(fmt.Sprintf("存在相同ip[%s]指向不同的目录[%s/%s]存在.", v__, vx, dir))
+					} else {
+						rip2dir[v__] = dir
+					}
+				}
+			}
+		}
+	}
+
+	return rip2dir, nil
 }
 
 // 上载类文件到集群指定的目录.

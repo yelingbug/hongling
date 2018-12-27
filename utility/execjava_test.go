@@ -57,3 +57,11 @@ func TestInCompleteSplit(t *testing.T) {
 		t.Error("结果应该为12 3.")
 	}
 }
+
+func TestParseDirs(t *testing.T) {
+	_, err := parseDirs([]string{"172.16.0.199|172.16.0.198:/home/admin/tomcat","172.16.0.197:/home/opt/tomcat"})
+	if err != nil {
+		t.Error(err)
+	}
+
+}
