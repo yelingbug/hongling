@@ -7,7 +7,6 @@ import (
 	"errors"
 	"sync"
 	"time"
-	"reflect"
 	_ "github.com/go-sql-driver/mysql"
 	"strings"
 	"regexp"
@@ -44,15 +43,15 @@ type DataSourceProperties struct {
 }
 
 var environments = map[string]DataSourceProperties {
-	"dev" : {
+	DEV : {
 		username: "C65E183D16B1A210",
 		password: "646D541782E6D78C51923A35A3D19D3E",
 	},
-	"test": {
+	TEST: {
 		username: "",
 		password: "C3940641962CA5BDFF24F7D079E9D5D31385ACCB7B67EB68",
 	},
-	"prod": {},
+	PROD: {},
 }
 
 var DrdsCommand = &cli.Command{
@@ -62,13 +61,6 @@ var DrdsCommand = &cli.Command{
 	Usage:"hl [global options] drds/mysql/db [command options] [arguments...]",
 	Action: drds,
 	Flags: []cli.Flag{
-		&cli.StringFlag{
-			Name:"environment",
-			Aliases: []string{"env", "e"},
-			Usage: "选择环境`dev/test/prod`, 缺省为dev.",
-			Value: "dev",
-			Destination: &envValue,
-		},
 		&cli.BoolFlag{
 			Name:"usage",
 			Aliases:[]string{"u"},
@@ -92,8 +84,10 @@ var DrdsCommand = &cli.Command{
 
 // 通过命令行传入SQL执行数据库查询和更新.
 func drds(c *cli.Context) error {
-	if _, ok := environments[envValue]; !ok {
-		return errors.New(fmt.Sprintf("环境只能是%s其中之一,默认为dev.", reflect.ValueOf(environments).MapKeys()))
+	if v, err := Verify(c.String("environment"), DEV); err != nil {
+		return err
+	} else {
+		envValue = v
 	}
 
 	if updateValue != "" {
@@ -109,13 +103,13 @@ func drds(c *cli.Context) error {
 			Logger.Info(fmt.Sprintf("查询结果:[%s]", rows))
 		}
 
-	} else if usageValue {
+	} else/* if usageValue*/ {
 		fmt.Println(`用法:
   查询类:
-    hl drds/mysql/db -select/-query/-q/-s [SQL语句]
+    hl drds/mysql/db [-e ` + DEV + "/" + TEST + "/" + PROD + `] -select/-query/-q/-s [SQL语句]
       例如:hl drds/mysql/db -select "select * from uc_user where user_id = 12345"
   更新/删除类:
-    hl drds/mysql/db -update/-set/-modify [SQL更新语句,支持update/delete]
+    hl drds/mysql/db [-e ` + DEV + "/" + TEST + "/" + PROD + `] -update/-set/-modify [SQL更新语句,支持update/delete]
       例如:hl drds/mysql/db -update "update uc_user set login_username='abc' where user_id = 12345"`)
 	}
 	return nil
