@@ -1,8 +1,12 @@
 package utility
 
 import (
-	"testing"
+	"io"
+	"io/ioutil"
+	"os"
+	"reflect"
 	"strings"
+	"testing"
 )
 
 func TestStringSplit(t *testing.T) {
@@ -59,9 +63,52 @@ func TestInCompleteSplit(t *testing.T) {
 }
 
 func TestParseDirs(t *testing.T) {
-	_, err := parseDirs([]string{"172.16.0.199|172.16.0.198:/home/admin/tomcat","172.16.0.197:/home/opt/tomcat"})
+	result, err := parseDirs([]string{"172.16.0.199|172.16.0.198:/home/admin/tomcat","172.16.0.197:/home/opt/tomcat"})
 	if err != nil {
 		t.Error(err)
 	}
+
+	if !reflect.DeepEqual(result, map[string]string{
+		"172.16.0.199":"/home/admin/tomcat",
+		"172.16.0.198":"/home/admin/tomcat",
+		"172.16.0.197":"/home/opt/tomcat",}) {
+		t.Error("两个结果应该相等.")
+	}
+
+	result, err = parseDirs([]string{"", ""})
+	t.Log(err)
+	if err == nil {
+		t.Error("应该要报错因为len(result) == 0.")
+	}
+
+	result, err = parseDirs([]string{"/home/abc/def"})
+	t.Log(result)
+	if err != nil {
+		t.Error("这个调用是正确的，结果会是[*]=/home/abc/def")
+	}
+	if !reflect.DeepEqual(result, map[string]string{"*": "/home/abc/def"}) {
+		t.Error("结果必须相等.")
+	}
+
+	result, err = parseDirs([]string{"172.15.s:/a/b/c:/d/e/f", ",,", "18|19:/56"})
+	t.Log(err)
+	if err == nil {
+		t.Error("这个格式是不正确的，必须要报错.")
+	}
+}
+
+func TestCopyFile(t *testing.T) {
+	f1, _ := os.Create("execjava_1")
+	f2, _ := os.Create("execjava_2")
+
+	ioutil.WriteFile("execjava_1", []byte("123中国人"), os.ModePerm)
+	io.Copy(f2, f1)
+	c, _ := ioutil.ReadFile("execjava_2")
+	if string(c) != "123中国人" {
+		t.Error("拷贝没有按照预想的方式进行.")
+	}
+
+	os.RemoveAll("execjava_1")
+	os.RemoveAll("execjava_2")
 
 }
