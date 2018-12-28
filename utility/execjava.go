@@ -14,21 +14,32 @@ import (
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
 	"time"
+	"gopkg.in/AlecAivazis/survey.v1"
+	"gopkg.in/AlecAivazis/survey.v1/core"
+	"reflect"
+	"math/rand"
+	"net/http"
+	"io/ioutil"
 )
 
 const (
-	whoami = iota
-	whoareu
-	whoisit
+	_whoami = iota
+	_whoareu
+	_whoisit
+)
+
+const (
+	_user     = "yelin.g"
+	_password = "hi, hongling"
 )
 
 var modules = map[string]map[string]interface{}{
 	"common": {
-		"orderBy": 1,
-		"name": "common",
+		"orderBy":      1,
+		"name":         "common",
 		"relativePath": "common",
 		"forFix":       false,
-		"priority":     whoami,
+		"priority":     _whoami,
 	},
 
 	/*"mcommon": {
@@ -36,177 +47,176 @@ var modules = map[string]map[string]interface{}{
 		"forFix": false,
 	},*/
 	"mclient": {
-		"orderBy": 2,
-		"name": "mc-hsf-client",
+		"orderBy":      2,
+		"name":         "mc-hsf-client",
 		"relativePath": "message-center/mc-hsf-client",
 		"forFix":       false,
-		"priority":     whoareu,
+		"priority":     _whoareu,
 	},
 	/*"ucommon": {
 		"relativePath": "user-center/uc-common",
 		"forFix": false,
 	},*/
 	"uclient": {
-		"orderBy": 3,
-		"name": "uc-hsf-client",
+		"orderBy":      3,
+		"name":         "uc-hsf-client",
 		"relativePath": "user-center/uc-hsf-client",
 		"forFix":       false,
-		"priority":     whoareu,
+		"priority":     _whoareu,
 	},
 	/*"uacommon": {
 		"relativePath": "user-account-center/uac-common",
 		"forFix": false,
 	},*/
 	"uaclient": {
-		"orderBy": 4,
-		"name": "uac-hsf-client",
+		"orderBy":      4,
+		"name":         "uac-hsf-client",
 		"relativePath": "user-account-center/uac-hsf-client",
 		"forFix":       false,
-		"priority":     whoareu,
+		"priority":     _whoareu,
 	},
 	"ssoclient": {
-		"orderBy": 5,
-		"name": "sso-client",
+		"orderBy":      5,
+		"name":         "sso-client",
 		"relativePath": "single-sign-on/sso-client",
 		"forFix":       false,
-		"priority":     whoareu,
+		"priority":     _whoareu,
 	},
 	"tcbidclient": {
-		"orderBy": 6,
-		"name": "trans-bidding-hsf-client",
+		"orderBy":      6,
+		"name":         "trans-bidding-hsf-client",
 		"relativePath": "transaction/trans-bidding-hsf-client",
 		"forFix":       false,
-		"priority":     whoareu,
+		"priority":     _whoareu,
 	},
 	"tcothersclient": {
-		"orderBy": 7,
-		"name": "trans-others-client",
+		"orderBy":      7,
+		"name":         "trans-others-client",
 		"relativePath": "transaction/trans-others-client",
 		"forFix":       false,
-		"priority":     whoareu,
+		"priority":     _whoareu,
 	},
 	"tcrepayclient": {
-		"orderBy": 8,
-		"name": "trans-repayment-hsf-client",
+		"orderBy":      8,
+		"name":         "trans-repayment-hsf-client",
 		"relativePath": "transaction/trans-repayment-hsf-client",
 		"forFix":       false,
-		"priority":     whoareu,
+		"priority":     _whoareu,
 	},
 	"tctransclient": {
-		"orderBy": 9,
-		"name": "trans-transfer-hsf-client",
+		"orderBy":      9,
+		"name":         "trans-transfer-hsf-client",
 		"relativePath": "transaction/trans-transfer-hsf-client",
 		"forFix":       false,
-		"priority":     whoareu,
+		"priority":     _whoareu,
 	},
 	"ptclient": {
-		"orderBy": 10,
-		"name": "portal-hsf-client",
+		"orderBy":      10,
+		"name":         "portal-hsf-client",
 		"relativePath": "portal/portal-hsf-client",
 		"forFix":       false,
-		"priority":     whoareu,
+		"priority":     _whoareu,
 	},
 	"yxclient": {
-		"orderBy": 11,
-		"name": "youxuan-hsf-client",
+		"orderBy":      11,
+		"name":         "youxuan-hsf-client",
 		"relativePath": "youxuan/youxuan-hsf-client",
 		"forFix":       false,
-		"priority":     whoareu,
+		"priority":     _whoareu,
 	},
 	"tcore": {
-		"orderBy": 12,
-		"name": "trans-core",
+		"orderBy":      12,
+		"name":         "trans-core",
 		"relativePath": "transaction/trans-core",
 		"forFix":       false,
-		"priority":     whoareu,
-
+		"priority":     _whoareu,
 	},
 
 	"uc": {
-		"orderBy": 13,
-		"name": "uc-hsf-service",
+		"orderBy":      13,
+		"name":         "uc-hsf-service",
 		"relativePath": "user-center/uc-hsf-service",
-		"priority":     whoisit,
+		"priority":     _whoisit,
 		"forFix": map[string][]string{
-			TEST: {"10.0.0.1"},
+			TEST: {"10.0.0.1:123"},
 			PROD: {},
 		},
 	},
 	"uac": {
-		"orderBy": 14,
-		"name": "uac-hsf-service",
+		"orderBy":      14,
+		"name":         "uac-hsf-service",
 		"relativePath": "user-account-center/uac-hsf-service",
-		"priority":     whoisit,
+		"priority":     _whoisit,
 		"forFix": map[string][]string{
 			TEST: {"10.0.0.1"},
 			PROD: {},
 		},
 	},
 	"schd": {
-		"orderBy": 15,
-		"name": "scheduler",
+		"orderBy":      15,
+		"name":         "scheduler",
 		"relativePath": "scheduler",
-		"priority":     whoisit,
+		"priority":     _whoisit,
 		"forFix": map[string][]string{
 			TEST: {"10.0.0.1"},
 			PROD: {},
 		},
 	},
 	"tcbid": {
-		"orderBy": 16,
-		"name": "trans-bidding",
+		"orderBy":      16,
+		"name":         "trans-bidding",
 		"relativePath": "transaction/trans-bidding",
-		"priority":     whoisit,
+		"priority":     _whoisit,
 		"forFix": map[string][]string{
 			TEST: {"10.0.0.1"},
 			PROD: {},
 		},
 	},
 	"tctrans": {
-		"orderBy": 17,
-		"name": "trans-transfer",
+		"orderBy":      17,
+		"name":         "trans-transfer",
 		"relativePath": "transaction/trans-transfer",
-		"priority":     whoisit,
+		"priority":     _whoisit,
 		"forFix": map[string][]string{
 			TEST: {"10.0.0.1"},
 			PROD: {},
 		},
 	},
 	"tc": {
-		"orderBy": 18,
-		"name": "trans-bidding-hsf-service",
+		"orderBy":      18,
+		"name":         "trans-bidding-hsf-service",
 		"relativePath": "transaction/trans-bidding-hsf-service",
-		"priority":     whoisit,
+		"priority":     _whoisit,
 		"forFix": map[string][]string{
 			TEST: {"10.0.0.1"},
 			PROD: {},
 		},
 	},
 	"mc": {
-		"orderBy": 19,
-		"name": "mc-hsf-service",
+		"orderBy":      19,
+		"name":         "mc-hsf-service",
 		"relativePath": "message-center/mc-hsf-service",
-		"priority":     whoisit,
+		"priority":     _whoisit,
 		"forFix": map[string][]string{
 			TEST: {"10.0.0.1"},
 			PROD: {},
 		},
 	},
 	"pt": {
-		"orderBy": 20,
-		"name": "portal-hsf-service",
+		"orderBy":      20,
+		"name":         "portal-hsf-service",
 		"relativePath": "portal/portal-hsf-service",
-		"priority":     whoisit,
+		"priority":     _whoisit,
 		"forFix": map[string][]string{
 			TEST: {"10.0.0.1"},
 			PROD: {},
 		},
 	},
 	"tcrepay": {
-		"orderBy": 21,
-		"name": "trans-repayment",
+		"orderBy":      21,
+		"name":         "trans-repayment",
 		"relativePath": "transaction/trans-repayment",
-		"priority":     whoisit,
+		"priority":     _whoisit,
 		"forFix": map[string][]string{
 			TEST: {"10.0.0.1"},
 			PROD: {},
@@ -222,8 +232,8 @@ var ExecjavaCommand = &cli.Command{
 	Action:   execJavaUsage,
 	Flags: []cli.Flag{
 		&cli.StringFlag{
-			Name: "r",
-			Usage:"远程服务器上项目部署的根目录,格式:<ip>:<目录>,如果所有服务器的目录相同,可以忽略ip,即:<目录>.",
+			Name:  "r",
+			Usage: "远程服务器上项目部署的根目录,格式:<ip>:<目录>,如果所有服务器的目录相同,可以忽略ip,即:<目录>.",
 		},
 	},
 }
@@ -277,7 +287,7 @@ func execJavaUsage(c *cli.Context) error {
 }
 
 // 不同环境下远程服务器部署目录
-var remoteDirs = map[string]string{
+var _remoteDirs = map[string]string{
 	TEST: "/home/admin/taobao-tomcat-7.0.59/deploy/ROOT/WEB-INF/classes/",
 	PROD: "/home/admin/taobao-tomcat-7.0.59/deploy/ROOT/WEB-INF/classes/",
 }
@@ -288,9 +298,13 @@ func execJava(c *cli.Context) error {
 		return err
 	}
 
+	if env == DEV {
+		env = TEST
+	}
+
 	rdirs := c.String("r")
 	if rdirs == "" {
-		rdirs = remoteDirs[env]
+		rdirs = _remoteDirs[env]
 		Logger.Info(fmt.Sprintf("没有指定远程服务器项目的部署根目录,缺省为[%s].", rdirs))
 	}
 
@@ -309,9 +323,125 @@ func execJava(c *cli.Context) error {
 		return err
 	}
 
-	if err := execute(c.Command.Name, env, rdirs, c.Args().First()); err != nil {
+	rip2dir, err := parse(rdirs)
+	if err != nil {
 		return err
 	}
+
+	if err := upload(c.Command.Name, env, rip2dir, c.Args().First()); err != nil {
+		return err
+	}
+
+	if err := execute(c.Command.Name, env, rip2dir, c.Args().First()); err != nil {
+		return err
+	}
+
+	//connect("104.128.237.136", 57896)
+	//uploadClassFileToHost("./main", "104.128.237.136@57896", "/root/main")
+
+	/*var sftpClient *sftp.Client
+	if sshClient, err := createSshTunnel("104.128.237.136", "57896"); err != nil {
+		return err
+	} else {
+		var err_ error
+		if sftpClient, err_ = createSftpClient(sshClient); err_ != nil {
+			return err_
+		}
+	}
+	defer sftpClient.Close()
+
+	timer := time.NewTicker(2 * time.Second)
+	for {
+		if f, err := sftpClient.Open("/root/abc"); err != nil && os.IsNotExist(err) {
+			fmt.Println("文件不存在.....")
+		} else {
+			if s, sss := ioutil.ReadAll(f); sss != nil {
+				fmt.Println("读取文件失败...")
+			} else {
+				fmt.Println(fmt.Sprintf("文件%s存在.", s))
+				break
+			}
+		}
+		<- timer.C
+	}
+	defer timer.Stop()*/
+
+	return nil
+}
+
+// 通过内网调用远程服务http接口执行命令.
+func execute(command, env string, rip2dir map[string]string, class string) error {
+	// 随机选择一台服务器.
+	cluster := modules[command]["forFix"].(map[string][]string)[env]
+	rand.Seed(time.Now().Unix())
+	iport := cluster[rand.Intn(len(cluster))]
+
+	classFilePath := strings.Replace(class, ".", string(os.PathSeparator), -1)
+	classFileRemotePaths := getRemotePathForClass(modules[command], env, rip2dir, classFilePath)
+
+	iportAfterSplitted := strings.Split(iport, "@")
+	if len(iportAfterSplitted) != 2 {
+		return errors.New(fmt.Sprintf("预定义服务器ip端口%s格式错误.", iport))
+	}
+
+	// 准备http post请求,送出class类路径字符串
+	ip, port := iportAfterSplitted[0], iportAfterSplitted[1]
+	url := fmt.Sprintf("https://%s:80/fix", ip)
+
+	client := &http.Client{
+		Timeout: 1 * time.Minute,
+	}
+
+	// 发出请求,服务立即返回
+	resp, err := client.Post(url, "text/plain", strings.NewReader(class))
+	if err != nil {
+		return nil
+	}
+	defer resp.Body.Close()
+
+	var sftpClient *sftp.Client
+	if sshClient, err := createSshTunnel(ip, port); err != nil {
+		return err
+	} else {
+		var err_ error
+		if sftpClient, err_ = createSftpClient(sshClient); err_ != nil {
+			return err_
+		}
+	}
+	defer sftpClient.Close()
+
+	// 2s一次检查任务是否执行完成.
+	timer := time.NewTicker(2 * time.Second)
+	timeout := 0
+	for {
+		if f, err := sftpClient.Open(classFileRemotePaths[iport] + "/" + class + ".doing"); err != nil && os.IsNotExist(err) {
+			Logger.Info("远程服务进程还未开始,等待... ... ...")
+		} else if err == nil {
+			if _, err_ := sftpClient.Open(classFileRemotePaths[iport] + "/" + class + ".done"); err_ != nil && os.IsNotExist(err_) {
+				Logger.Info("远程服务进程已经开始,处理日志正在刷新,还未完成... ... ...")
+			} else if err_ == nil {
+				if result, err__ := ioutil.ReadAll(f); err__ != nil {
+					Logger.Warn(fmt.Sprintf("读取远程服务进程处理结果失败,请自行前往服务器%s相应目录下查看结果.", ip))
+				} else {
+					Logger.Info(fmt.Sprintf(`远程服务进程处理完成,处理结果:
+%s
+`, result))
+					break
+				}
+
+			}
+
+		} else {
+			return errors.New(fmt.Sprintf("尝试打开远程服务进程处理日志失败:%s", err))
+		}
+		<- timer.C
+		timeout++
+		if timeout == 30 {
+			Logger.Info(fmt.Sprintf("等待远程服务进程处理结果超过1分钟,请自行前往服务器%s相应目录下查看结果.", ip))
+			break
+		}
+	}
+	defer timer.Stop()
 
 	return nil
 }
@@ -322,7 +452,7 @@ func pullProductionBranch() error {
 	execCommand(CacheDir, "git", "clone", "--single-branch", "--branch", "production", "git@172.16.0.100:java/hl.main.git")
 
 	// 对clone的仓库,做一次更新,保证代码是最新的
-	if err := execCommand(CacheDir + "hl.main", "git", "pull"); err != nil {
+	if err := execCommand(CacheDir+"hl.main", "git", "pull"); err != nil {
 		return err
 	}
 	return nil
@@ -400,17 +530,8 @@ func compile() error {
 	return nil
 }
 
-// 执行修复.
-func execute(command string, env string, rdirs string, classAs string) error {
-	// 如果不同于缺省的远程目录,明确指定服务器对应的目录结构,有两种可能:
-	// 1,如果有部分不同于缺省目录的服务器,格式为"<ip1|ip2...>:<dir>,<ip3|ip4...>:<dir>",比如"172.16.0.20:/home/opt/tomcat,172.16.0.11|172.16.0.12:/home/admin/tomcat"
-	// 2,如果所有的服务器的目录都不同于缺省目录,格式为"<dir>",比如"/home/opt/tomcat"
-	rdirsAfterSplitted := strings.Split(rdirs, ",")
-	rip2dir, err_ := parseDirs(rdirsAfterSplitted)
-	if err_ != nil {
-		return err_
-	}
-
+// 上载文件.
+func upload(command string, env string, rip2dir map[string]string, classAs string) error {
 	// 上载class文件到对应服务的集群部署目录
 	if err := uploadClassFileToCluster(modules[command], env, rip2dir, classAs); err != nil {
 		return err
@@ -420,7 +541,12 @@ func execute(command string, env string, rdirs string, classAs string) error {
 }
 
 // 解析目录参数.
-func parseDirs(rdirsAfterSplitted []string) (map[string]string, error) {
+func parse(rdirs string) (map[string]string, error) {
+	// 如果不同于缺省的远程目录,明确指定服务器对应的目录结构,有两种可能:
+	// 1,如果有部分不同于缺省目录的服务器,格式为"<ip1|ip2...>:<dir>,<ip3|ip4...>:<dir>",比如"172.16.0.20:/home/opt/tomcat,172.16.0.11|172.16.0.12:/home/admin/tomcat"
+	// 2,如果所有的服务器的目录都不同于缺省目录,格式为"<dir>",比如"/home/opt/tomcat"
+	rdirsAfterSplitted := strings.Split(rdirs, ",")
+
 	rip2dir := make(map[string]string)
 	// 清理前后空格
 	rdirsAfterCleaned := make([]string, 0)
@@ -472,9 +598,29 @@ func parseDirs(rdirsAfterSplitted []string) (map[string]string, error) {
 // 上载类文件到集群指定的目录.
 func uploadClassFileToCluster(module map[string]interface{}, env string, rdirs map[string]string, classAs string) error {
 	// 将类路径转换为class文件的绝对路径
-	classFilePath := strings.Replace(classAs, ".", string(os.PathSeparator), -1)
+	classFilePath := strings.Replace(classAs, ".", string(os.PathSeparator), -1) + ".class"
 	classFileLocalPath := CacheDir + "hl.main/" + module["relativePath"].(string) + "/src/main/java/" + classFilePath
+	for k, v := range getRemotePathForClass(module, env, rdirs, classFilePath) {
+		if err := uploadClassFileToHost(classFileLocalPath, k, v); err != nil {
+			return err
+		}
+	}
 
+	return nil
+}
+
+// 如果classFilePath是以.class结尾的文件,返回的就是每个服务器对应的远程class文件放置的绝对路径;
+// 如果classFilePath不以.class结尾,返回的就是每个服务器对应的远程class文件所在的目录.
+func getRemotePathForClass(module map[string]interface{}, env string, rdirs map[string]string, classFilePath string) map[string]string {
+	// 如果不以.class文件结尾,要的结果就是class文件所在的远程服务器目录.
+	if !strings.HasSuffix(classFilePath, ".class") {
+		index := strings.LastIndex(classFilePath, string(os.PathSeparator))
+		if index == -1 {
+			classFilePath = ""
+		} else {
+			classFilePath = classFilePath[:index+1]
+		}
+	}
 	clusters := module["forFix"].(map[string][]string)[env]
 	classFileRemotePaths := make(map[string]string, len(clusters))
 	if rp, ok := rdirs["*"]; ok {
@@ -492,27 +638,33 @@ func uploadClassFileToCluster(module map[string]interface{}, env string, rdirs m
 				}
 				classFileRemotePaths[ip] = v + classFilePath
 			} else {
-				classFileRemotePaths[ip] = remoteDirs[env] + classFilePath
+				classFileRemotePaths[ip] = _remoteDirs[env] + classFilePath
 			}
 		}
 	}
-
-	for k, v := range classFileRemotePaths {
-		if err := uploadClassFileToHost(classFileLocalPath, k, v); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return classFileRemotePaths
 }
 
 // 通过ssh传送文件到远程服务器指定目录.
-func uploadClassFileToHost(localPath, ip, remotePath string) error {
-	client, err := connect(ip, 22)
-	if err != nil {
-		return err
+func uploadClassFileToHost(localPath, iport, remotePath string) error {
+	iportAfterSplitted := strings.Split(iport, "@")
+	if len(iportAfterSplitted) != 2 {
+		return errors.New(fmt.Sprintf("预定义服务器ip端口%s格式错误.", iport))
 	}
-	defer client.Close()
+
+	ip, port := iportAfterSplitted[0], iportAfterSplitted[1]
+
+	var sftpClient *sftp.Client
+	if sshClient, err := createSshTunnel(ip, port); err != nil {
+		return err
+	} else {
+		var _err error
+		sftpClient, _err = createSftpClient(sshClient)
+		if _err != nil {
+			return _err
+		}
+	}
+	defer sftpClient.Close()
 
 	l, err_ := os.Open(localPath)
 	if err_ != nil {
@@ -520,7 +672,7 @@ func uploadClassFileToHost(localPath, ip, remotePath string) error {
 	}
 	defer l.Close()
 
-	r, err__ := client.Create(remotePath)
+	r, err__ := sftpClient.Create(remotePath)
 	if err__ != nil {
 		return err__
 	}
@@ -530,64 +682,86 @@ func uploadClassFileToHost(localPath, ip, remotePath string) error {
 	if err___ != nil && err___ != io.EOF {
 		return err___
 	}
-	Logger.Info(fmt.Sprintf(" 上传本地文件%s到远程主机%s的指定目录%s成功,传输大小%d字节.", localPath, ip, remotePath, size))
+	Logger.Info(fmt.Sprintf(" 上传本地文件%s到远程主机%s的指定目录%s成功,传输大小%d字节.", localPath, iport, remotePath, size))
 	return nil
-	/*buf := make([]byte, 1024)
-	for {
-		n, err___ := l.Read(buf)
-		if err___ != nil && err___ != io.EOF {
-			return err___
-		}
-
-		if n == 0 {
-			break
-		}
-
-		_, err____ := r.Write(buf)
-		if err____ != nil {
-			return err____
-		}
-	}*/
-
 }
 
 // 连接远程主机
-func connect(ip string, port int) (*sftp.Client, error) {
+func createSshTunnel(ip string, port string) (*ssh.Client, error) {
 	var (
-		auth         []ssh.AuthMethod
-		addr         string
-		clientConfig *ssh.ClientConfig
-		sshClient    *ssh.Client
-		sftpClient   *sftp.Client
-		err          error
+		sshClient *ssh.Client
+		err       error
 	)
 
-	user := ""
-	password := ""
+	// 连接
+	addr := fmt.Sprintf("%s:%s", ip, port)
 
+	auth := struct {
+		// survey内部使用反射,首字母必须大写.
+		User     string
+		Password string
+	}{_user, _password}
+
+	for {
+		sshClient, err = ssh.Dial("tcp", addr, buildConnectContext(auth.User, auth.Password))
+		if err == nil {
+			return sshClient, nil
+		}
+
+		// 只对鉴权失败继续尝试.
+		if !strings.Contains(err.Error(), "handshake failed: ssh: unable to authenticate") {
+			return nil, errors.New(fmt.Sprintf("连接%s时候发生异常:%s.", addr, err))
+		}
+
+		Logger.Warn(fmt.Sprintf("连接%s鉴权失败,重新输入用户名密码.", addr))
+
+		// 自定义错误输出模板
+		core.ErrorTemplate = `{{color "red"}}{{ ErrorIcon }} 抱歉, 输入无效: {{.Error}}{{color "reset"}}
+`
+		inputs := []*survey.Question{
+			{
+				Name: "user",
+				Prompt: &survey.Input{
+					Message: "用户名:",
+					Help:    "用户名不能过长,长度一般在3到20之间.",
+				},
+				Validate: requiredWithMessage("用户名"),
+			},
+			{
+				Name: "password",
+				Prompt: &survey.Password{
+					Message: "密码:",
+					Help:    "密码稍微复杂一点,严格保密.",
+				},
+				Validate: requiredWithMessage("密码"),
+			},
+		}
+		if err_ := survey.Ask(inputs, &auth); err_ != nil {
+			return nil, errors.New(fmt.Sprintf("连接时候交互输入处理失败:%s.", err_))
+		}
+	}
+}
+
+func createSftpClient(client *ssh.Client) (*sftp.Client, error) {
+	// create sftp client
+	if sftpClient, err := sftp.NewClient(client); err != nil {
+		return nil, errors.New(fmt.Sprintf("连接成功但是创建ftp连接时失败:%s.", err))
+	} else {
+		return sftpClient, nil
+	}
+}
+
+func buildConnectContext(user, password string) *ssh.ClientConfig {
 	// 授权
-	auth = make([]ssh.AuthMethod, 0)
+	auth := make([]ssh.AuthMethod, 0)
 	auth = append(auth, ssh.Password(password))
 
-	clientConfig = &ssh.ClientConfig{
-		User:    user,
-		Auth:    auth,
-		Timeout: 30 * time.Second,
+	return &ssh.ClientConfig{
+		User:            user,
+		Auth:            auth,
+		Timeout:         30 * time.Second,
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
-
-	// 连接
-	addr = fmt.Sprintf("%s:%d", ip, port)
-
-	if sshClient, err = ssh.Dial("tcp", addr, clientConfig); err != nil {
-		return nil, err
-	}
-
-	// create sftp client
-	if sftpClient, err = sftp.NewClient(sshClient); err != nil {
-		return nil, err
-	}
-
-	return sftpClient, nil
 }
 
 // 执行命令.
@@ -646,4 +820,28 @@ func execCommand(toDir string, command string, params ...string) error {
 	}
 
 	return nil
+}
+
+// isZero returns true if the passed value is the zero object
+func isZero(v reflect.Value) bool {
+	switch v.Kind() {
+	case reflect.Slice, reflect.Map:
+		return v.Len() == 0
+	}
+
+	// compare the types directly with more general coverage
+	return reflect.DeepEqual(v.Interface(), reflect.Zero(v.Type()).Interface())
+}
+
+func requiredWithMessage(message string) func(val interface{}) error {
+	return func(val interface{}) error {
+		// the reflect value of the result
+		value := reflect.ValueOf(val)
+
+		// if the value passed in is the zero value of the appropriate type
+		if isZero(value) && value.Kind() != reflect.Bool {
+			return errors.New(message + "不能为空.")
+		}
+		return nil
+	}
 }
