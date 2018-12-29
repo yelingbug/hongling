@@ -138,8 +138,8 @@ var modules = map[string]map[string]interface{}{
 		"relativePath": "user-center/uc-hsf-service",
 		"priority":     _whoisit,
 		"forFix": map[string][]string{
-			TEST: {"10.0.0.1:123"},
-			PROD: {},
+			TEST: {"10.139.51.136@22", "10.139.54.223@22"},
+			PROD: {"10.253.43.53@22", "10.139.51.37@22", "10.139.54.60@22"},
 		},
 	},
 	"uac": {
@@ -148,8 +148,8 @@ var modules = map[string]map[string]interface{}{
 		"relativePath": "user-account-center/uac-hsf-service",
 		"priority":     _whoisit,
 		"forFix": map[string][]string{
-			TEST: {"10.0.0.1"},
-			PROD: {},
+			TEST: {"10.139.39.111@22", "10.139.55.25@22"},
+			PROD: {"10.139.48.208@22", "10.139.51.147@22", "10.253.42.231@22"},
 		},
 	},
 	"schd": {
@@ -158,8 +158,8 @@ var modules = map[string]map[string]interface{}{
 		"relativePath": "scheduler",
 		"priority":     _whoisit,
 		"forFix": map[string][]string{
-			TEST: {"10.0.0.1"},
-			PROD: {},
+			TEST: {"10.139.49.117@22", "10.139.52.127@22"},
+			PROD: {"10.139.55.170@22", "10.253.43.49@22"},
 		},
 	},
 	"tcbid": {
@@ -168,8 +168,8 @@ var modules = map[string]map[string]interface{}{
 		"relativePath": "transaction/trans-bidding",
 		"priority":     _whoisit,
 		"forFix": map[string][]string{
-			TEST: {"10.0.0.1"},
-			PROD: {},
+			TEST: {"10.139.38.6@22", "10.139.52.11@22"},
+			PROD: {"10.139.49.84@22", "10.253.43.12@22"},
 		},
 	},
 	"tctrans": {
@@ -178,8 +178,8 @@ var modules = map[string]map[string]interface{}{
 		"relativePath": "transaction/trans-transfer",
 		"priority":     _whoisit,
 		"forFix": map[string][]string{
-			TEST: {"10.0.0.1"},
-			PROD: {},
+			TEST: {"10.139.48.224@22", "10.139.52.74@22"},
+			PROD: {"10.253.43.6@22", "10.139.51.178@22"},
 		},
 	},
 	"tc": {
@@ -188,8 +188,8 @@ var modules = map[string]map[string]interface{}{
 		"relativePath": "transaction/trans-bidding-hsf-service",
 		"priority":     _whoisit,
 		"forFix": map[string][]string{
-			TEST: {"10.0.0.1"},
-			PROD: {},
+			TEST: {"10.139.38.220@22", "10.139.53.143@22"},
+			PROD: {"10.139.38.106@22", "10.253.43.38@22"},
 		},
 	},
 	"mc": {
@@ -198,8 +198,8 @@ var modules = map[string]map[string]interface{}{
 		"relativePath": "message-center/mc-hsf-service",
 		"priority":     _whoisit,
 		"forFix": map[string][]string{
-			TEST: {"10.0.0.1"},
-			PROD: {},
+			TEST: {"10.139.51.215@22", "10.139.53.109@22"},
+			PROD: {"10.253.43.37@22", "10.139.52.162@22"},
 		},
 	},
 	"pt": {
@@ -208,8 +208,8 @@ var modules = map[string]map[string]interface{}{
 		"relativePath": "portal/portal-hsf-service",
 		"priority":     _whoisit,
 		"forFix": map[string][]string{
-			TEST: {"10.0.0.1"},
-			PROD: {},
+			TEST: {"10.139.48.247@22", "10.139.54.34@22"},
+			PROD: {"10.253.43.59@22", "10.139.55.140@22"},
 		},
 	},
 	"tcrepay": {
@@ -218,8 +218,8 @@ var modules = map[string]map[string]interface{}{
 		"relativePath": "transaction/trans-repayment",
 		"priority":     _whoisit,
 		"forFix": map[string][]string{
-			TEST: {"10.0.0.1"},
-			PROD: {},
+			TEST: {"10.139.39.85@22", "10.139.48.194@22"},
+			PROD: {"10.139.55.16@22", "10.139.52.96@22", "10.253.43.41@22"},
 		},
 	},
 }
@@ -252,7 +252,7 @@ func init() {
 func execJavaUsage(c *cli.Context) error {
 	fmt.Println(`使用方法:
   1,写一个public的java类,类名随意,必须包含默认构造函数,只要包含方法签名:
-    public void fix() {
+    public void fix(FixLogger logger) {
       //修复逻辑
     }
   2,类可以定义在任意模块中,支持的模块有` + `,类实例在初始化的时候会被对应模块的spring上下文autowire,所以放心的声明任意依赖的dao/service等...
@@ -271,7 +271,7 @@ func execJavaUsage(c *cli.Context) error {
       @Resource
       protected AccountService accountService;
 
-      public void fix() {
+      public void fix(FixLogger logger) {
         System.out.println("准备开工");
         ...
         System.out.println("一共执行了100行.")
@@ -385,8 +385,8 @@ func execute(command, env string, rip2dir map[string]string, class string) error
 	}
 
 	// 准备http post请求,送出class类路径字符串
-	ip, port := iportAfterSplitted[0], iportAfterSplitted[1]
-	url := fmt.Sprintf("https://%s:80/fix", ip)
+	ip, port := strings.TrimSpace(iportAfterSplitted[0]), strings.TrimSpace(iportAfterSplitted[1])
+	url := fmt.Sprintf("https://%s:8080/fix", ip)
 
 	client := &http.Client{
 		Timeout: 1 * time.Minute,
@@ -395,9 +395,21 @@ func execute(command, env string, rip2dir map[string]string, class string) error
 	// 发出请求,服务立即返回
 	resp, err := client.Post(url, "text/plain", strings.NewReader(class))
 	if err != nil {
-		return nil
+		return err
 	}
 	defer resp.Body.Close()
+
+	if result, err := ioutil.ReadAll(resp.Body); err != nil {
+		return err
+	} else {
+		resultAsString := string(result)
+		if resultAsString == "OK" {
+			Logger.Info("请求成功,坐等服务进程处理结果.")
+		} else {
+			status := fmt.Sprintf("请求成功,但是服务进程预处理失败,检查参数:[%s].", resultAsString)
+			return errors.New(status)
+		}
+	}
 
 	var sftpClient *sftp.Client
 	if sshClient, err := createSshTunnel(ip, port); err != nil {
