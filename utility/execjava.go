@@ -386,7 +386,7 @@ func execute(command, env string, rip2dir map[string]string, class string) error
 
 	// 准备http post请求,送出class类路径字符串
 	ip, port := strings.TrimSpace(iportAfterSplitted[0]), strings.TrimSpace(iportAfterSplitted[1])
-	url := fmt.Sprintf("https://%s:8080/fix", ip)
+	url := fmt.Sprintf("http://%s:8080/fix", ip)
 
 	client := &http.Client{
 		Timeout: 1 * time.Minute,
