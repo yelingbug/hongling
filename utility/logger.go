@@ -20,10 +20,10 @@ var CacheDir = getCacheDir()
 func getCacheDir() string {
 	userdir, err := homedir.Dir()
 	if err != nil {
-		userdir = "./"
+		userdir = "." + string(os.PathSeparator)
 	}
 
-	return fmt.Sprintf("%s/.utility/", userdir)
+	return fmt.Sprintf("%s%s.utility%s", userdir, string(os.PathSeparator), string(os.PathSeparator))
 }
 
 // 初始化logger.
@@ -33,11 +33,11 @@ func init() {
 	//info和error分开
 	//info保存debug, info和warn level, error保存error和fatal level.
 	forInfo, _ := rotatelogs.New(
-		fmt.Sprintf("%s/info", CacheDir) + ".%Y%m%d",
+		fmt.Sprintf("%s%sinfo", string(os.PathSeparator), CacheDir) + ".%Y%m%d",
 		rotatelogs.WithRotationTime(1*time.Minute),
 		rotatelogs.WithMaxAge(7 * 24 *time.Hour))
 	forError, _ := rotatelogs.New(
-		fmt.Sprintf("%s/error", CacheDir) + ".%Y%m%d",
+		fmt.Sprintf("%s%serror", string(os.PathSeparator), CacheDir) + ".%Y%m%d",
 		rotatelogs.WithRotationTime(1*time.Minute),
 		rotatelogs.WithMaxAge(7 * 24 *time.Hour))
 

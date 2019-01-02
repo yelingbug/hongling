@@ -243,6 +243,9 @@ var ExecjavaCommand = &cli.Command{
 	},
 }
 
+var _mainDir = CacheDir + "hl.main"
+var _compiledPath = CacheDir+ string(os.PathSeparator) + "hl.main.compiled"
+
 func init() {
 	for key, value := range modules {
 		if _, ok := value["forFix"].(map[string][]string); ok {
@@ -487,8 +490,8 @@ func pullProductionBranch(branch string) (bool, error) {
 	execCommand(CacheDir, "", "git", "clone", "git@218.17.101.103:java/hl.main.git")
 
 	// 切换到指定分支,并做一次更新,保证代码是最新的
-	execCommand(CacheDir+"hl.main", "", "git", "checkout", "-b", branch, "origin/" + branch)
-	if upToDate, err := execCommand(CacheDir+"hl.main", "Already up to date", "git", "pull"); err != nil {
+	execCommand(_mainDir, "", "git", "checkout", "-b", branch, "origin/" + branch)
+	if upToDate, err := execCommand(_mainDir, "Already up to date", "git", "pull"); err != nil {
 		return false, err
 	} else {
 		return upToDate, nil
@@ -497,7 +500,7 @@ func pullProductionBranch(branch string) (bool, error) {
 
 // 编译项目,拉取依赖.
 func compile(upToDate bool, branch string) error {
-	if _, erc := os.Stat(CacheDir+"/hl.main.compiled"); upToDate && erc == nil {
+	if _, erc := os.Stat(_compiledPath); upToDate && erc == nil {
 		Logger.Info(fmt.Sprintf("项目分支%s是最新版本,并且已经编译过,跳过编译.", branch))
 		return nil
 	}
@@ -520,11 +523,11 @@ func compile(upToDate bool, branch string) error {
 			Logger.Info(fmt.Sprintf("编译项目[%s]...", value["name"]))
 			r, n := value["relativePath"].(string), value["name"].(string)
 			if r[0:(len(r) - len(n))] == "" {
-				if _, err := execCommand(CacheDir+"/hl.main/"+value["name"].(string), "", "mvn", "install"); err != nil {
+				if _, err := execCommand(_mainDir + string(os.PathSeparator)+value["name"].(string), "", "mvn", "install"); err != nil {
 					return err
 				}
 			} else {
-				if _, err := execCommand(CacheDir+"/hl.main/"+r[0:(len(r) - len(n))], "", "mvn", "-am", "-pl", value["name"].(string), "install"); err != nil {
+				if _, err := execCommand(_mainDir + string(os.PathSeparator)+r[0:(len(r) - len(n))], "", "mvn", "-am", "-pl", value["name"].(string), "install"); err != nil {
 					return nil
 				}
 			}
@@ -543,11 +546,11 @@ func compile(upToDate bool, branch string) error {
 			go func(dir string, v map[string]interface{}) {
 				defer wg.Done()
 				if dir == "" {
-					if _, err := execCommand(CacheDir+"/hl.main/", "", "mvn", "install", "-f", CacheDir+"/hl.main/"+v["name"].(string)+"/pom.xml"); err != nil {
+					if _, err := execCommand(_mainDir + string(os.PathSeparator), "", "mvn", "install", "-f", CacheDir+"/hl.main/"+v["name"].(string)+"/pom.xml"); err != nil {
 						ch <- err
 					}
 				} else {
-					if _, err := execCommand(CacheDir+"/hl.main/", "", "mvn", "-am", "-pl", v["name"].(string), "install", "-f", CacheDir+"/hl.main/"+dir+"pom.xml"); err != nil {
+					if _, err := execCommand(_mainDir + string(os.PathSeparator), "", "mvn", "-am", "-pl", v["name"].(string), "install", "-f", _mainDir + string(os.PathSeparator)+dir+"pom.xml"); err != nil {
 						ch <- err
 					}
 				}
@@ -570,7 +573,7 @@ func compile(upToDate bool, branch string) error {
 		return errors.New(strings.Join(errs, "\n"))
 	}
 
-	ioutil.WriteFile(CacheDir+"/hl.main.compiled", []byte(time.Now().Format("2006-01-02 15:04:05")), 0666)
+	ioutil.WriteFile(_compiledPath, []byte(time.Now().Format("2006-01-02 15:04:05")), 0666)
 	return nil
 }
 
@@ -643,7 +646,7 @@ func parse(rdirs string) (map[string]string, error) {
 func uploadClassFileToCluster(module map[string]interface{}, env string, rdirs map[string]string, classAs string) error {
 	// 将类路径转换为class文件的绝对路径
 	classFilePath := strings.Replace(classAs, ".", string(os.PathSeparator), -1) + ".class"
-	classFileLocalPath := CacheDir + "hl.main/" + module["relativePath"].(string) + "/target/classes/" + classFilePath
+	classFileLocalPath := _mainDir + string(os.PathSeparator) + module["relativePath"].(string) + string(os.PathSeparator) + "target" + string(os.PathSeparator) + "classes" + string(os.PathSeparator) + classFilePath
 	for k, v := range getRemotePathForClass(module, env, rdirs, classFilePath) {
 		if err := uploadClassFileToHost(classFileLocalPath, k, v); err != nil {
 			return err
