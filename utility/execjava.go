@@ -138,7 +138,7 @@ var modules = map[string]map[string]interface{}{
 		"relativePath": "user-center/uc-hsf-service",
 		"priority":     _whoisit,
 		"forFix": map[string][]string{
-			TEST: {"10.139.51.136@22", "10.139.54.223@22"},
+			TEST: {"10.139.51.136@22", "10.139.51.136@22"},
 			PROD: {"10.253.43.53@22", "10.139.51.37@22", "10.139.54.60@22"},
 		},
 	},
@@ -235,6 +235,11 @@ var ExecjavaCommand = &cli.Command{
 			Name:  "r",
 			Usage: "远程服务器上项目部署的根目录,格式:<ip>:<目录>,如果所有服务器的目录相同,可以忽略ip,即:<目录>.",
 		},
+		&cli.StringFlag{
+			Name:  "b",
+			Usage: "项目分支,只能是pre-production或者production分之,缺省为production.",
+			Value:"production",
+		},
 	},
 }
 
@@ -259,7 +264,7 @@ func execJavaUsage(c *cli.Context) error {
   3,毫无疑问,类在对应的模块中必须能被编译通过,当然测试必须OK.
   4,搞定之后,要同步到production分支,修复的意义也就在此.
   5,经过我或者开发的确认,去找运维的同事执行如下命令(他们懂得):
-    g execjava/ej <模块>..<类的全路径>
+    g execjava/ej <模块> <类的全路径>
 
   例子:
     在uc服务上写一个类example:
@@ -272,14 +277,14 @@ func execJavaUsage(c *cli.Context) error {
       protected AccountService accountService;
 
       public void fix(FixLogger logger) {
-        System.out.println("准备开工");
+        logger.append("准备开工");
         ...
-        System.out.println("一共执行了100行.")
+        logger.append("搞定收工,花费%d秒.", 10)
         ...
       }
     }
     本地编译测试通过,同步奥production环境,审核确认后,告诉运维在生产环境执行:
-    g execjava/ej uc.com.hongling.abc.example
+    g execjava/ej uc com.hongling.abc.example
     
     THAT'S IT!
 `)
@@ -313,12 +318,19 @@ func execJava(c *cli.Context) error {
 		return nil
 	}
 
-	if err := pullProductionBranch(); err != nil {
+	branch := c.String("b")
+	if branch != "pre-production" && branch != "production" {
+		Logger.Info("指定的分支不是pre-production或者production,默认为production")
+		branch = "production"
+	}
+
+	var upToDate bool
+	if upToDate, err = pullProductionBranch(branch); err != nil {
 		Logger.Error(fmt.Sprintf("拉取production分之失败:[%s].", err))
 		return err
 	}
 
-	if err := compile(); err != nil {
+	if err := compile(upToDate, branch); err != nil {
 		Logger.Error(fmt.Sprintf("编译项目失败:[%s].", err))
 		return err
 	}
@@ -376,6 +388,7 @@ func execute(command, env string, rip2dir map[string]string, class string) error
 	rand.Seed(time.Now().Unix())
 	iport := cluster[rand.Intn(len(cluster))]
 
+	Logger.Info(fmt.Sprintf("随机选取一台服务器%s", iport))
 	classFilePath := strings.Replace(class, ".", string(os.PathSeparator), -1)
 	classFileRemotePaths := getRemotePathForClass(modules[command], env, rip2dir, classFilePath)
 
@@ -384,9 +397,11 @@ func execute(command, env string, rip2dir map[string]string, class string) error
 		return errors.New(fmt.Sprintf("预定义服务器ip端口%s格式错误.", iport))
 	}
 
+
 	// 准备http post请求,送出class类路径字符串
 	ip, port := strings.TrimSpace(iportAfterSplitted[0]), strings.TrimSpace(iportAfterSplitted[1])
 	url := fmt.Sprintf("http://%s:8080/fix", ip)
+	Logger.Info(fmt.Sprintf("请求%s执行修复.", url))
 
 	client := &http.Client{
 		Timeout: 1 * time.Minute,
@@ -412,7 +427,7 @@ func execute(command, env string, rip2dir map[string]string, class string) error
 	}
 
 	var sftpClient *sftp.Client
-	if sshClient, err := createSshTunnel(ip, port); err != nil {
+	if sshClient, err := createSshTunnel(ip, port, "监控执行结果"); err != nil {
 		return err
 	} else {
 		var err_ error
@@ -422,14 +437,22 @@ func execute(command, env string, rip2dir map[string]string, class string) error
 	}
 	defer sftpClient.Close()
 
+	classIndex := strings.LastIndex(class, ".")
+	if classIndex != -1 {
+		class = class[classIndex+1:]
+	}
+
+	logFilePath := classFileRemotePaths[iport] + class
+	Logger.Info(fmt.Sprintf("远程服务进程控制文件路径:%s", logFilePath))
+
 	// 2s一次检查任务是否执行完成.
 	timer := time.NewTicker(2 * time.Second)
 	timeout := 0
 	for {
-		if f, err := sftpClient.Open(classFileRemotePaths[iport] + "/" + class + ".doing"); err != nil && os.IsNotExist(err) {
+		if f, err := sftpClient.Open(logFilePath + ".doing"); err != nil && os.IsNotExist(err) {
 			Logger.Info("远程服务进程还未开始,等待... ... ...")
 		} else if err == nil {
-			if _, err_ := sftpClient.Open(classFileRemotePaths[iport] + "/" + class + ".done"); err_ != nil && os.IsNotExist(err_) {
+			if _, err_ := sftpClient.Open(logFilePath + ".done"); err_ != nil && os.IsNotExist(err_) {
 				Logger.Info("远程服务进程已经开始,处理日志正在刷新,还未完成... ... ...")
 			} else if err_ == nil {
 				if result, err__ := ioutil.ReadAll(f); err__ != nil {
@@ -459,19 +482,26 @@ func execute(command, env string, rip2dir map[string]string, class string) error
 }
 
 // 拉取hl.main的production分支.
-func pullProductionBranch() error {
+func pullProductionBranch(branch string) (bool, error) {
 	// clone仓库,如果已经克隆,忽略
-	execCommand(CacheDir, "git", "clone", "--single-branch", "--branch", "production", "git@172.16.0.100:java/hl.main.git")
+	execCommand(CacheDir, "", "git", "clone", "git@218.17.101.103:java/hl.main.git")
 
-	// 对clone的仓库,做一次更新,保证代码是最新的
-	if err := execCommand(CacheDir+"hl.main", "git", "pull"); err != nil {
-		return err
+	// 切换到指定分支,并做一次更新,保证代码是最新的
+	execCommand(CacheDir+"hl.main", "", "git", "checkout", "-b", branch, "origin/" + branch)
+	if upToDate, err := execCommand(CacheDir+"hl.main", "Already up to date", "git", "pull"); err != nil {
+		return false, err
+	} else {
+		return upToDate, nil
 	}
-	return nil
 }
 
 // 编译项目,拉取依赖.
-func compile() error {
+func compile(upToDate bool, branch string) error {
+	if _, erc := os.Stat(CacheDir+"/hl.main.compiled"); upToDate && erc == nil {
+		Logger.Info(fmt.Sprintf("项目分支%s是最新版本,并且已经编译过,跳过编译.", branch))
+		return nil
+	}
+
 	// 排序
 	var keysOrderBy []int
 	keysOrderByMap := make(map[int]string, len(modules))
@@ -490,11 +520,11 @@ func compile() error {
 			Logger.Info(fmt.Sprintf("编译项目[%s]...", value["name"]))
 			r, n := value["relativePath"].(string), value["name"].(string)
 			if r[0:(len(r) - len(n))] == "" {
-				if err := execCommand(CacheDir+"/hl.main/"+value["name"].(string), "mvn", "install"); err != nil {
+				if _, err := execCommand(CacheDir+"/hl.main/"+value["name"].(string), "", "mvn", "install"); err != nil {
 					return err
 				}
 			} else {
-				if err := execCommand(CacheDir+"/hl.main/"+r[0:(len(r) - len(n))], "mvn", "-am", "-pl", value["name"].(string), "install"); err != nil {
+				if _, err := execCommand(CacheDir+"/hl.main/"+r[0:(len(r) - len(n))], "", "mvn", "-am", "-pl", value["name"].(string), "install"); err != nil {
 					return nil
 				}
 			}
@@ -513,11 +543,11 @@ func compile() error {
 			go func(dir string, v map[string]interface{}) {
 				defer wg.Done()
 				if dir == "" {
-					if err := execCommand(CacheDir+"/hl.main/", "mvn", "install", "-f", CacheDir+"/hl.main/"+v["name"].(string)+"/pom.xml"); err != nil {
+					if _, err := execCommand(CacheDir+"/hl.main/", "", "mvn", "install", "-f", CacheDir+"/hl.main/"+v["name"].(string)+"/pom.xml"); err != nil {
 						ch <- err
 					}
 				} else {
-					if err := execCommand(CacheDir+"/hl.main/", "mvn", "-am", "-pl", v["name"].(string), "install", "-f", CacheDir+"/hl.main/"+dir+"pom.xml"); err != nil {
+					if _, err := execCommand(CacheDir+"/hl.main/", "", "mvn", "-am", "-pl", v["name"].(string), "install", "-f", CacheDir+"/hl.main/"+dir+"pom.xml"); err != nil {
 						ch <- err
 					}
 				}
@@ -539,6 +569,8 @@ func compile() error {
 	if len(errs) > 0 {
 		return errors.New(strings.Join(errs, "\n"))
 	}
+
+	ioutil.WriteFile(CacheDir+"/hl.main.compiled", []byte(time.Now().Format("2006-01-02 15:04:05")), 0666)
 	return nil
 }
 
@@ -611,7 +643,7 @@ func parse(rdirs string) (map[string]string, error) {
 func uploadClassFileToCluster(module map[string]interface{}, env string, rdirs map[string]string, classAs string) error {
 	// 将类路径转换为class文件的绝对路径
 	classFilePath := strings.Replace(classAs, ".", string(os.PathSeparator), -1) + ".class"
-	classFileLocalPath := CacheDir + "hl.main/" + module["relativePath"].(string) + "/src/main/java/" + classFilePath
+	classFileLocalPath := CacheDir + "hl.main/" + module["relativePath"].(string) + "/target/classes/" + classFilePath
 	for k, v := range getRemotePathForClass(module, env, rdirs, classFilePath) {
 		if err := uploadClassFileToHost(classFileLocalPath, k, v); err != nil {
 			return err
@@ -667,7 +699,7 @@ func uploadClassFileToHost(localPath, iport, remotePath string) error {
 	ip, port := iportAfterSplitted[0], iportAfterSplitted[1]
 
 	var sftpClient *sftp.Client
-	if sshClient, err := createSshTunnel(ip, port); err != nil {
+	if sshClient, err := createSshTunnel(ip, port, "上传Class文件"); err != nil {
 		return err
 	} else {
 		var _err error
@@ -699,7 +731,7 @@ func uploadClassFileToHost(localPath, iport, remotePath string) error {
 }
 
 // 连接远程主机
-func createSshTunnel(ip string, port string) (*ssh.Client, error) {
+func createSshTunnel(ip string, port string, scene string) (*ssh.Client, error) {
 	var (
 		sshClient *ssh.Client
 		err       error
@@ -722,34 +754,34 @@ func createSshTunnel(ip string, port string) (*ssh.Client, error) {
 
 		// 只对鉴权失败继续尝试.
 		if !strings.Contains(err.Error(), "handshake failed: ssh: unable to authenticate") {
-			return nil, errors.New(fmt.Sprintf("连接%s时候发生异常:%s.", addr, err))
+			return nil, errors.New(fmt.Sprintf("[%s]连接%s时候发生异常:%s.", scene, addr, err))
 		}
 
-		Logger.Warn(fmt.Sprintf("连接%s鉴权失败,重新输入用户名密码.", addr))
+		Logger.Warn(fmt.Sprintf("[%s]连接%s鉴权失败,重新输入用户名密码.", scene, addr))
 
 		// 自定义错误输出模板
-		core.ErrorTemplate = `{{color "red"}}{{ ErrorIcon }} 抱歉, 输入无效: {{.Error}}{{color "reset"}}
+		core.ErrorTemplate = `[` + scene + `]{{color "red"}}{{ ErrorIcon }} 抱歉, 输入无效: {{.Error}}{{color "reset"}}
 `
 		inputs := []*survey.Question{
 			{
 				Name: "user",
 				Prompt: &survey.Input{
-					Message: "用户名:",
-					Help:    "用户名不能过长,长度一般在3到20之间.",
+					Message: "[" + scene + "]用户名[@" + ip + ":" + port + "]:",
+					Help:    "[" + scene + "]用户名不能过长,长度一般在3到20之间.",
 				},
 				Validate: requiredWithMessage("用户名"),
 			},
 			{
 				Name: "password",
 				Prompt: &survey.Password{
-					Message: "密码:",
-					Help:    "密码稍微复杂一点,严格保密.",
+					Message: "[" + scene + "]密码[@" + ip + ":" + port + "]:",
+					Help:    "[" + scene + "]密码稍微复杂一点,严格保密.",
 				},
 				Validate: requiredWithMessage("密码"),
 			},
 		}
 		if err_ := survey.Ask(inputs, &auth); err_ != nil {
-			return nil, errors.New(fmt.Sprintf("连接时候交互输入处理失败:%s.", err_))
+			return nil, errors.New(fmt.Sprintf("[%s]连接时候交互输入处理失败:%s.", scene, err_))
 		}
 	}
 }
@@ -777,10 +809,10 @@ func buildConnectContext(user, password string) *ssh.ClientConfig {
 }
 
 // 执行命令.
-func execCommand(toDir string, command string, params ...string) error {
+func execCommand(toDir string, matchStr string, command string, params ...string) (bool, error) {
 	if err := os.Chdir(toDir); err != nil {
 		Logger.Fatal(err)
-		return err
+		return false, err
 	}
 
 	commandAs := exec.Command(command, params...)
@@ -790,24 +822,29 @@ func execCommand(toDir string, command string, params ...string) error {
 	defer out.Close()
 	if err != nil {
 		Logger.Fatal(fmt.Sprintf("执行命令%s时候获取标准输出通道失败.", err))
-		return err
+		return false, err
 	}
 
 	outForErr, err_ := commandAs.StderrPipe()
 	defer out.Close()
 	if err_ != nil {
 		Logger.Fatal(fmt.Sprintf("执行命令%s时候获取错误输出通道失败.", err))
-		return err_
+		return false, err_
 	}
 
 	commandAs.Start()
 
+	upToDate := false
+	matchStr = strings.TrimSpace(matchStr)
 	//go func() {
 	reader := bufio.NewReader(out)
 	for {
 		line, err__ := reader.ReadString('\n')
 		if err__ != nil || err_ == io.EOF {
 			break
+		}
+		if matchStr != "" && strings.HasPrefix(line, matchStr) {
+			upToDate = true
 		}
 		Logger.Info(line)
 	}
@@ -828,10 +865,10 @@ func execCommand(toDir string, command string, params ...string) error {
 		if strings.HasSuffix(err__.Error(), "not started") {
 			Logger.Error(fmt.Sprintf("命令%s不存在.", command))
 		}
-		return err__
+		return upToDate, err__
 	}
 
-	return nil
+	return upToDate, nil
 }
 
 // isZero returns true if the passed value is the zero object

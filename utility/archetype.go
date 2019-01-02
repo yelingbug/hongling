@@ -3,10 +3,10 @@ package utility
 import (
 	"fmt"
 	"github.com/pkg/errors"
-	"go.etcd.io/etcd/pkg/ioutil"
 	"gopkg.in/urfave/cli.v2"
 	"os"
 	"time"
+	"io/ioutil"
 )
 
 const (
@@ -626,5 +626,5 @@ func createDir(name string) error {
 }
 
 func createFile(name, content string) error {
-	return ioutil.WriteAndSyncFile(name, []byte(content), 0666)
+	return ioutil.WriteFile(name, []byte(content), 0666)
 }
