@@ -258,7 +258,8 @@ func init() {
 }
 
 func execJavaUsage(c *cli.Context) error {
-	fmt.Println(`使用方法:
+	fmt.Println(`-----------------------------------------------------------
+使用方法:
   1,写一个public的java类,类名随意,必须包含默认构造函数,只要包含方法签名:
     public void fix(FixLogger logger) {
       //修复逻辑
@@ -290,7 +291,7 @@ func execJavaUsage(c *cli.Context) error {
     g execjava/ej uc com.hongling.abc.example
     
     THAT'S IT!
-`)
+-----------------------------------------------------------`)
 	return nil
 }
 
@@ -329,7 +330,7 @@ func execJava(c *cli.Context) error {
 
 	var upToDate bool
 	if upToDate, err = pullProductionBranch(branch); err != nil {
-		Logger.Error(fmt.Sprintf("拉取production分之失败:[%s].", err))
+		Logger.Error(fmt.Sprintf("拉取%s分之失败:[%s].", branch, err))
 		return err
 	}
 
