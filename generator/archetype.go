@@ -1,4 +1,4 @@
-package utility
+package generator
 
 import (
 	"fmt"
@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 	"io/ioutil"
+	"hongling/utility"
 )
 
 const (
@@ -442,7 +443,7 @@ type archetype_action interface {
 }
 
 func (aa *archetype_args) getRoot() string {
-	return CacheDir + aa.name
+	return utility.CacheDir + aa.name
 }
 
 func (aa *archetype_args) isSpring() bool {
@@ -471,16 +472,16 @@ func (aa *archetype_args) isSpringBoot() bool {
 
 func (aa *archetype_args) generatePom() error {
 	if aa.isSpring() {
-		Logger.Info(fmt.Sprintf("生成%s类型项目的pom文件.", _FLAG_SPRING))
+		utility.Logger.Info(fmt.Sprintf("生成%s类型项目的pom文件.", _FLAG_SPRING))
 		return generateSpringPom(aa)
 	} else if aa.isSpringWeb() {
-		Logger.Info(fmt.Sprintf("生成%s类型项目的pom文件.", _FLAG_SPRING_WEB))
+		utility.Logger.Info(fmt.Sprintf("生成%s类型项目的pom文件.", _FLAG_SPRING_WEB))
 		return generateSpringWebPom(aa)
 	} else if aa.isSpringBoot() {
-		Logger.Info(fmt.Sprintf("生成%s类型项目的pom文件.", _FLAG_SPRING_BOOT))
+		utility.Logger.Info(fmt.Sprintf("生成%s类型项目的pom文件.", _FLAG_SPRING_BOOT))
 		return generateSpringBootPom(aa)
 	} else {
-		Logger.Warn(fmt.Sprintf("不支持%s类型项目的创建，略过.", aa.t))
+		utility.Logger.Warn(fmt.Sprintf("不支持%s类型项目的创建，略过.", aa.t))
 		return nil
 	}
 }
@@ -498,7 +499,7 @@ func generateSpringBootPom(aa *archetype_args) error {
 }
 
 func (aa *archetype_args) generateApplicationConfig() error {
-	Logger.Info(fmt.Sprintf("生成src/test的application配置."))
+	utility.Logger.Info(fmt.Sprintf("生成src/test的application配置."))
 	for _, entry := range []map[string]string{
 		{
 			"fileName": aa.getRoot() + "/src/main/resources/application.xml",
@@ -528,7 +529,7 @@ func generateApplicationConfig(aa *archetype_args) string {
 }
 
 func (aa *archetype_args) generateApplicationProperties() error {
-	Logger.Info(fmt.Sprintf("生成src/test的项目属性配置."))
+	utility.Logger.Info(fmt.Sprintf("生成src/test的项目属性配置."))
 	for _, entry := range []map[string]string{
 		{
 			"fileName": aa.getRoot() + "/src/main/resources/application.properties",
@@ -548,13 +549,13 @@ func (aa *archetype_args) generateApplicationProperties() error {
 
 func (aa *archetype_args) generate() error {
 	//初始化项目目录
-	name_ := CacheDir + aa.name
+	name_ := utility.CacheDir + aa.name
 	if err := createDir(name_); err != nil {
 		return err
 	}
 
 	//初始化maven样式的目录结构
-	Logger.Info(fmt.Sprintf("初始化项目%s的maven样式目录结构.", aa.name))
+	utility.Logger.Info(fmt.Sprintf("初始化项目%s的maven样式目录结构.", aa.name))
 	for _, dir := range []string{
 		"src/main/java",
 		"src/main/resources",
@@ -581,7 +582,7 @@ func (aa *archetype_args) generate() error {
 		return err
 	}
 
-	Logger.Info(fmt.Sprintf("生成项目%s模版完成.", aa.name))
+	utility.Logger.Info(fmt.Sprintf("生成项目%s模版完成.", aa.name))
 	return nil
 }
 
@@ -601,7 +602,7 @@ func archetype(c *cli.Context) error {
 	} else if c.Bool(_FLAG_SPRING_BOOT) {
 		aa.t = _FLAG_SPRING_BOOT
 	} else {
-		Logger.Info("没有指定项目类型,默认为spring-boot.")
+		utility.Logger.Info("没有指定项目类型,默认为spring-boot.")
 		aa.t = _FLAG_SPRING_BOOT
 	}
 
@@ -611,9 +612,9 @@ func archetype(c *cli.Context) error {
 func createDir(name string) error {
 	f, err := os.Stat(name)
 	if err == nil && f.IsDir() {
-		Logger.Warn("目录" + name + "存在.")
+		utility.Logger.Warn("目录" + name + "存在.")
 	} else if err != nil && os.IsNotExist(err) {
-		Logger.Info("创建目录" + name + ".")
+		utility.Logger.Info("创建目录" + name + ".")
 		if err_ := os.MkdirAll(name, os.ModePerm); err_ != nil {
 			return err_
 		} else {

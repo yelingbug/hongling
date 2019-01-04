@@ -1,4 +1,4 @@
-package utility
+package drds
 
 import (
 	"gopkg.in/urfave/cli.v2"
@@ -10,6 +10,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"strings"
 	"regexp"
+	"hongling/utility"
 )
 
 type Rows []map[string]interface{}
@@ -43,15 +44,15 @@ type DataSourceProperties struct {
 }
 
 var environments = map[string]DataSourceProperties {
-	DEV : {
+	utility.DEV : {
 		username: "C65E183D16B1A210",
 		password: "646D541782E6D78C51923A35A3D19D3E",
 	},
-	TEST: {
+	utility.TEST: {
 		username: "",
 		password: "C3940641962CA5BDFF24F7D079E9D5D31385ACCB7B67EB68",
 	},
-	PROD: {},
+	utility.PROD: {},
 }
 
 var DrdsCommand = &cli.Command{
@@ -84,7 +85,7 @@ var DrdsCommand = &cli.Command{
 
 // 通过命令行传入SQL执行数据库查询和更新.
 func drds(c *cli.Context) error {
-	if v, err := Verify(c.String("environment"), DEV); err != nil {
+	if v, err := utility.Verify(c.String("environment"), utility.DEV); err != nil {
 		return err
 	} else {
 		envValue = v
@@ -92,24 +93,24 @@ func drds(c *cli.Context) error {
 
 	if updateValue != "" {
 		if rows, err := update(updateValue); err != nil {
-			Logger.Info(fmt.Sprintf("更新失败:[%s].", err))
+			utility.Logger.Info(fmt.Sprintf("更新失败:[%s].", err))
 		} else {
-			Logger.Info(fmt.Sprintf("更新结果影响%d行.", rows))
+			utility.Logger.Info(fmt.Sprintf("更新结果影响%d行.", rows))
 		}
 	} else if selectValue != "" {
 		if rows, err := query(selectValue); err != nil {
-			Logger.Info(fmt.Sprintf("查询失败:[%s].", err))
+			utility.Logger.Info(fmt.Sprintf("查询失败:[%s].", err))
 		} else {
-			Logger.Info(fmt.Sprintf("查询结果:[%s]", rows))
+			utility.Logger.Info(fmt.Sprintf("查询结果:[%s]", rows))
 		}
 
 	} else/* if usageValue*/ {
 		fmt.Println(`用法:
   查询类:
-    hl drds/mysql/db [-e ` + DEV + "/" + TEST + "/" + PROD + `] -select/-query/-q/-s [SQL语句]
+    hl drds/mysql/db [-e ` + utility.DEV + "/" + utility.TEST + "/" + utility.PROD + `] -select/-query/-q/-s [SQL语句]
       例如:hl drds/mysql/db -select "select * from uc_user where user_id = 12345"
   更新/删除类:
-    hl drds/mysql/db [-e ` + DEV + "/" + TEST + "/" + PROD + `] -update/-set/-modify [SQL更新语句,支持update/delete]
+    hl drds/mysql/db [-e ` + utility.DEV + "/" + utility.TEST + "/" + utility.PROD + `] -update/-set/-modify [SQL更新语句,支持update/delete]
       例如:hl drds/mysql/db -update "update uc_user set login_username='abc' where user_id = 12345"`)
 	}
 	return nil
@@ -144,7 +145,7 @@ func initDataSourceIfNecessary() {
 		pool_, err := sql.Open("mysql", environments[envValue].username + ":" + environments[envValue].password + "@tcp(" + environments[envValue].host + ":" + string(environments[envValue].port) + ")/" + environments[envValue].schema + "?charset=utf8mb4,utf8&autocommit=false&parseTime=true")
 		if err != nil {
 			detail := fmt.Sprintf("数据库连接失败: [%s].", err)
-			Logger.Warn(detail)
+			utility.Logger.Warn(detail)
 			panic(detail)
 		}
 

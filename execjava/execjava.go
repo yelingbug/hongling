@@ -1,4 +1,4 @@
-package utility
+package execjava
 
 import (
 	"gopkg.in/urfave/cli.v2"
@@ -20,6 +20,7 @@ import (
 	"math/rand"
 	"net/http"
 	"io/ioutil"
+	"hongling/utility"
 )
 
 const (
@@ -31,15 +32,18 @@ const (
 const (
 	_user     = "yelin.g"
 	_password = "hi, hongling"
+
+	_command = "execjava"
 )
 
-var modules = map[string]map[string]interface{}{
+var _modules = map[string]map[string]interface{}{
 	"common": {
 		"orderBy":      1,
 		"name":         "common",
 		"relativePath": "common",
 		"forFix":       false,
 		"priority":     _whoami,
+		"description": "全局公共接口和基础数据定义.",
 	},
 
 	/*"mcommon": {
@@ -52,6 +56,7 @@ var modules = map[string]map[string]interface{}{
 		"relativePath": "message-center/mc-hsf-client",
 		"forFix":       false,
 		"priority":     _whoareu,
+		"description": "消息HSF客户端定义.",
 	},
 	/*"ucommon": {
 		"relativePath": "user-center/uc-common",
@@ -63,6 +68,7 @@ var modules = map[string]map[string]interface{}{
 		"relativePath": "user-center/uc-hsf-client",
 		"forFix":       false,
 		"priority":     _whoareu,
+		"description": "用户基础信息HSF客户端定义.",
 	},
 	/*"uacommon": {
 		"relativePath": "user-account-center/uac-common",
@@ -74,6 +80,7 @@ var modules = map[string]map[string]interface{}{
 		"relativePath": "user-account-center/uac-hsf-client",
 		"forFix":       false,
 		"priority":     _whoareu,
+		"description": "资金交易HSF客户端定义.",
 	},
 	"ssoclient": {
 		"orderBy":      5,
@@ -81,6 +88,7 @@ var modules = map[string]map[string]interface{}{
 		"relativePath": "single-sign-on/sso-client",
 		"forFix":       false,
 		"priority":     _whoareu,
+		"description": "单点登录HSF客户端定义.",
 	},
 	"tcbidclient": {
 		"orderBy":      6,
@@ -88,6 +96,7 @@ var modules = map[string]map[string]interface{}{
 		"relativePath": "transaction/trans-bidding-hsf-client",
 		"forFix":       false,
 		"priority":     _whoareu,
+		"description": "核心交易HSF客户端定义.",
 	},
 	"tcothersclient": {
 		"orderBy":      7,
@@ -95,6 +104,7 @@ var modules = map[string]map[string]interface{}{
 		"relativePath": "transaction/trans-others-client",
 		"forFix":       false,
 		"priority":     _whoareu,
+		"description": "第三方或者其他交易HSF客户端定义.",
 	},
 	"tcrepayclient": {
 		"orderBy":      8,
@@ -102,6 +112,7 @@ var modules = map[string]map[string]interface{}{
 		"relativePath": "transaction/trans-repayment-hsf-client",
 		"forFix":       false,
 		"priority":     _whoareu,
+		"description": "还款HSF客户端定义.",
 	},
 	"tctransclient": {
 		"orderBy":      9,
@@ -109,6 +120,7 @@ var modules = map[string]map[string]interface{}{
 		"relativePath": "transaction/trans-transfer-hsf-client",
 		"forFix":       false,
 		"priority":     _whoareu,
+		"description": "债权转让HSF客户端定义.",
 	},
 	"ptclient": {
 		"orderBy":      10,
@@ -116,6 +128,7 @@ var modules = map[string]map[string]interface{}{
 		"relativePath": "portal/portal-hsf-client",
 		"forFix":       false,
 		"priority":     _whoareu,
+		"description": "主站(portal)HSF客户端定义.",
 	},
 	"yxclient": {
 		"orderBy":      11,
@@ -123,6 +136,7 @@ var modules = map[string]map[string]interface{}{
 		"relativePath": "youxuan/youxuan-hsf-client",
 		"forFix":       false,
 		"priority":     _whoareu,
+		"description": "优选HSF客户端定义.",
 	},
 	"tcore": {
 		"orderBy":      12,
@@ -130,6 +144,7 @@ var modules = map[string]map[string]interface{}{
 		"relativePath": "transaction/trans-core",
 		"forFix":       false,
 		"priority":     _whoareu,
+		"description": "核心交易公共包.",
 	},
 
 	"uc": {
@@ -138,9 +153,10 @@ var modules = map[string]map[string]interface{}{
 		"relativePath": "user-center/uc-hsf-service",
 		"priority":     _whoisit,
 		"forFix": map[string][]string{
-			TEST: {"10.139.51.136@22", "10.139.51.136@22"},
-			PROD: {"10.253.43.53@22", "10.139.51.37@22", "10.139.54.60@22"},
+			utility.TEST: {"10.139.51.136@22", "10.139.54.223@22"},
+			utility.PROD: {"10.253.43.53@22", "10.139.51.37@22", "10.139.54.60@22"},
 		},
+		"description": "用户基础信息HSF服务.",
 	},
 	"uac": {
 		"orderBy":      14,
@@ -148,9 +164,10 @@ var modules = map[string]map[string]interface{}{
 		"relativePath": "user-account-center/uac-hsf-service",
 		"priority":     _whoisit,
 		"forFix": map[string][]string{
-			TEST: {"10.139.39.111@22", "10.139.55.25@22"},
-			PROD: {"10.139.48.208@22", "10.139.51.147@22", "10.253.42.231@22"},
+			utility.TEST: {"10.139.39.111@22", "10.139.55.25@22"},
+			utility.PROD: {"10.139.48.208@22", "10.139.51.147@22", "10.253.42.231@22"},
 		},
+		"description": "资金交易HSF服务.",
 	},
 	"schd": {
 		"orderBy":      15,
@@ -158,9 +175,10 @@ var modules = map[string]map[string]interface{}{
 		"relativePath": "scheduler",
 		"priority":     _whoisit,
 		"forFix": map[string][]string{
-			TEST: {"10.139.49.117@22", "10.139.52.127@22"},
-			PROD: {"10.139.55.170@22", "10.253.43.49@22"},
+			utility.TEST: {"10.139.49.117@22", "10.139.52.127@22"},
+			utility.PROD: {"10.139.55.170@22", "10.253.43.49@22"},
 		},
+		"description": "定时任务.",
 	},
 	"tcbid": {
 		"orderBy":      16,
@@ -168,9 +186,10 @@ var modules = map[string]map[string]interface{}{
 		"relativePath": "transaction/trans-bidding",
 		"priority":     _whoisit,
 		"forFix": map[string][]string{
-			TEST: {"10.139.38.6@22", "10.139.52.11@22"},
-			PROD: {"10.139.49.84@22", "10.253.43.12@22"},
+			utility.TEST: {"10.139.38.6@22", "10.139.52.11@22"},
+			utility.PROD: {"10.139.49.84@22", "10.253.43.12@22"},
 		},
+		"description": "自动投标服务",
 	},
 	"tctrans": {
 		"orderBy":      17,
@@ -178,9 +197,10 @@ var modules = map[string]map[string]interface{}{
 		"relativePath": "transaction/trans-transfer",
 		"priority":     _whoisit,
 		"forFix": map[string][]string{
-			TEST: {"10.139.48.224@22", "10.139.52.74@22"},
-			PROD: {"10.253.43.6@22", "10.139.51.178@22"},
+			utility.TEST: {"10.139.48.224@22", "10.139.52.74@22"},
+			utility.PROD: {"10.253.43.6@22", "10.139.51.178@22"},
 		},
+		"description": "债权转让HSF服务.",
 	},
 	"tc": {
 		"orderBy":      18,
@@ -188,9 +208,10 @@ var modules = map[string]map[string]interface{}{
 		"relativePath": "transaction/trans-bidding-hsf-service",
 		"priority":     _whoisit,
 		"forFix": map[string][]string{
-			TEST: {"10.139.38.220@22", "10.139.53.143@22"},
-			PROD: {"10.139.38.106@22", "10.253.43.38@22"},
+			utility.TEST: {"10.139.38.220@22", "10.139.53.143@22"},
+			utility.PROD: {"10.139.38.106@22", "10.253.43.38@22"},
 		},
+		"description": "核心交易HSF服务.",
 	},
 	"mc": {
 		"orderBy":      19,
@@ -198,9 +219,10 @@ var modules = map[string]map[string]interface{}{
 		"relativePath": "message-center/mc-hsf-service",
 		"priority":     _whoisit,
 		"forFix": map[string][]string{
-			TEST: {"10.139.51.215@22", "10.139.53.109@22"},
-			PROD: {"10.253.43.37@22", "10.139.52.162@22"},
+			utility.TEST: {"10.139.51.215@22", "10.139.53.109@22"},
+			utility.PROD: {"10.253.43.37@22", "10.139.52.162@22"},
 		},
+		"description": "消息HSF服务.",
 	},
 	"pt": {
 		"orderBy":      20,
@@ -208,9 +230,10 @@ var modules = map[string]map[string]interface{}{
 		"relativePath": "portal/portal-hsf-service",
 		"priority":     _whoisit,
 		"forFix": map[string][]string{
-			TEST: {"10.139.48.247@22", "10.139.54.34@22"},
-			PROD: {"10.253.43.59@22", "10.139.55.140@22"},
+			utility.TEST: {"10.139.48.247@22", "10.139.54.34@22"},
+			utility.PROD: {"10.253.43.59@22", "10.139.55.140@22"},
 		},
+		"description": "主站(Portal)HSF服务.",
 	},
 	"tcrepay": {
 		"orderBy":      21,
@@ -218,14 +241,15 @@ var modules = map[string]map[string]interface{}{
 		"relativePath": "transaction/trans-repayment",
 		"priority":     _whoisit,
 		"forFix": map[string][]string{
-			TEST: {"10.139.39.85@22", "10.139.48.194@22"},
-			PROD: {"10.139.55.16@22", "10.139.52.96@22", "10.253.43.41@22"},
+			utility.TEST: {"10.139.39.85@22", "10.139.48.194@22"},
+			utility.PROD: {"10.139.55.16@22", "10.139.52.96@22", "10.253.43.41@22"},
 		},
+		"description": "还款HSF服务.",
 	},
 }
 
-var ExecjavaCommand = &cli.Command{
-	Name:     "execjava",
+var ExecJavaCommand = &cli.Command{
+	Name:     _command,
 	Category: "应用修复",
 	Aliases:  []string{"ej"},
 	Usage:    "hl [global options] execjava/ej [command options] [arguments...]",
@@ -243,13 +267,13 @@ var ExecjavaCommand = &cli.Command{
 	},
 }
 
-var _mainDir = CacheDir + "hl.main"
-var _compiledPath = CacheDir+ string(os.PathSeparator) + "hl.main.compiled"
+var _mainDir = utility.CacheDir + "hl.main"
+var _compiledPath = utility.CacheDir+ string(os.PathSeparator) + "hl.main.compiled"
 
 func init() {
-	for key, value := range modules {
+	for key, value := range _modules {
 		if _, ok := value["forFix"].(map[string][]string); ok {
-			ExecjavaCommand.Subcommands = append(ExecjavaCommand.Subcommands, &cli.Command{
+			ExecJavaCommand.Subcommands = append(ExecJavaCommand.Subcommands, &cli.Command{
 				Name:   key,
 				Action: execJava,
 			})
@@ -297,45 +321,45 @@ func execJavaUsage(c *cli.Context) error {
 
 // 不同环境下远程服务器部署目录
 var _remoteDirs = map[string]string{
-	TEST: "/home/admin/taobao-tomcat-7.0.59/deploy/ROOT/WEB-INF/classes/",
-	PROD: "/home/admin/taobao-tomcat-7.0.59/deploy/ROOT/WEB-INF/classes/",
+	utility.TEST: "/home/admin/taobao-tomcat-7.0.59/deploy/ROOT/WEB-INF/classes/",
+	utility.PROD: "/home/admin/taobao-tomcat-7.0.59/deploy/ROOT/WEB-INF/classes/",
 }
 
 func execJava(c *cli.Context) error {
-	env, err := Verify(c.String("environment"), TEST)
+	env, err := utility.Verify(c.String("environment"), utility.TEST)
 	if err != nil {
 		return err
 	}
 
-	if env == DEV {
-		env = TEST
+	if env == utility.DEV {
+		env = utility.TEST
 	}
 
 	rdirs := c.String("r")
 	if rdirs == "" {
 		rdirs = _remoteDirs[env]
-		Logger.Info(fmt.Sprintf("没有指定远程服务器项目的部署根目录,缺省为[%s].", rdirs))
+		utility.Logger.Info(fmt.Sprintf("没有指定远程服务器项目的部署根目录,缺省为[%s].", rdirs))
 	}
 
 	if !c.Args().Present() {
-		Logger.Info("缺少类全路径参数:hl [global options] execjava/ej [uc/uac...] <类全路径>")
+		utility.Logger.Info("缺少类全路径参数:hl [global options] execjava/ej [uc/uac...] <类全路径>")
 		return nil
 	}
 
 	branch := c.String("b")
 	if branch != "pre-production" && branch != "production" {
-		Logger.Info("指定的分支不是pre-production或者production,默认为production")
+		utility.Logger.Info("指定的分支不是pre-production或者production,默认为production")
 		branch = "production"
 	}
 
 	var upToDate bool
 	if upToDate, err = pullProductionBranch(branch); err != nil {
-		Logger.Error(fmt.Sprintf("拉取%s分之失败:[%s].", branch, err))
+		utility.Logger.Error(fmt.Sprintf("拉取%s分之失败:[%s].", branch, err))
 		return err
 	}
 
 	if err := compile(upToDate, branch); err != nil {
-		Logger.Error(fmt.Sprintf("编译项目失败:[%s].", err))
+		utility.Logger.Error(fmt.Sprintf("编译项目失败:[%s].", err))
 		return err
 	}
 
@@ -388,13 +412,13 @@ func execJava(c *cli.Context) error {
 // 通过内网调用远程服务http接口执行命令.
 func execute(command, env string, rip2dir map[string]string, class string) error {
 	// 随机选择一台服务器.
-	cluster := modules[command]["forFix"].(map[string][]string)[env]
+	cluster := _modules[command]["forFix"].(map[string][]string)[env]
 	rand.Seed(time.Now().Unix())
 	iport := cluster[rand.Intn(len(cluster))]
 
-	Logger.Info(fmt.Sprintf("随机选取一台服务器%s", iport))
+	utility.Logger.Info(fmt.Sprintf("随机选取一台服务器%s", iport))
 	classFilePath := strings.Replace(class, ".", string(os.PathSeparator), -1)
-	classFileRemotePaths := getRemotePathForClass(modules[command], env, rip2dir, classFilePath)
+	classFileRemotePaths := getRemotePathForClass(_modules[command], env, rip2dir, classFilePath)
 
 	iportAfterSplitted := strings.Split(iport, "@")
 	if len(iportAfterSplitted) != 2 {
@@ -405,7 +429,7 @@ func execute(command, env string, rip2dir map[string]string, class string) error
 	// 准备http post请求,送出class类路径字符串
 	ip, port := strings.TrimSpace(iportAfterSplitted[0]), strings.TrimSpace(iportAfterSplitted[1])
 	url := fmt.Sprintf("http://%s:8080/fix", ip)
-	Logger.Info(fmt.Sprintf("请求%s执行修复.", url))
+	utility.Logger.Info(fmt.Sprintf("请求%s执行修复.", url))
 
 	client := &http.Client{
 		Timeout: 1 * time.Minute,
@@ -423,7 +447,7 @@ func execute(command, env string, rip2dir map[string]string, class string) error
 	} else {
 		resultAsString := string(result)
 		if resultAsString == "OK" {
-			Logger.Info("请求成功,坐等服务进程处理结果.")
+			utility.Logger.Info("请求成功,坐等服务进程处理结果.")
 		} else {
 			status := fmt.Sprintf("请求成功,但是服务进程预处理失败,检查参数:[%s].", resultAsString)
 			return errors.New(status)
@@ -447,22 +471,22 @@ func execute(command, env string, rip2dir map[string]string, class string) error
 	}
 
 	logFilePath := classFileRemotePaths[iport] + class
-	Logger.Info(fmt.Sprintf("远程服务进程控制文件路径:%s", logFilePath))
+	utility.Logger.Info(fmt.Sprintf("远程服务进程控制文件路径:%s", logFilePath))
 
 	// 2s一次检查任务是否执行完成.
 	timer := time.NewTicker(2 * time.Second)
 	timeout := 0
 	for {
 		if f, err := sftpClient.Open(logFilePath + ".doing"); err != nil && os.IsNotExist(err) {
-			Logger.Info("远程服务进程还未开始,等待... ... ...")
+			utility.Logger.Info("远程服务进程还未开始,等待... ... ...")
 		} else if err == nil {
 			if _, err_ := sftpClient.Open(logFilePath + ".done"); err_ != nil && os.IsNotExist(err_) {
-				Logger.Info("远程服务进程已经开始,处理日志正在刷新,还未完成... ... ...")
+				utility.Logger.Info("远程服务进程已经开始,处理日志正在刷新,还未完成... ... ...")
 			} else if err_ == nil {
 				if result, err__ := ioutil.ReadAll(f); err__ != nil {
-					Logger.Warn(fmt.Sprintf("读取远程服务进程处理结果失败,请自行前往服务器%s相应目录下查看结果.", ip))
+					utility.Logger.Warn(fmt.Sprintf("读取远程服务进程处理结果失败,请自行前往服务器%s相应目录下查看结果.", ip))
 				} else {
-					Logger.Info(fmt.Sprintf(`远程服务进程处理完成,处理结果:
+					utility.Logger.Info(fmt.Sprintf(`远程服务进程处理完成,处理结果:
 %s
 `, result))
 					break
@@ -476,7 +500,7 @@ func execute(command, env string, rip2dir map[string]string, class string) error
 		<- timer.C
 		timeout++
 		if timeout == 30 {
-			Logger.Info(fmt.Sprintf("等待远程服务进程处理结果超过1分钟,请自行前往服务器%s相应目录下查看结果.", ip))
+			utility.Logger.Info(fmt.Sprintf("等待远程服务进程处理结果超过1分钟,请自行前往服务器%s相应目录下查看结果.", ip))
 			break
 		}
 	}
@@ -488,7 +512,7 @@ func execute(command, env string, rip2dir map[string]string, class string) error
 // 拉取hl.main的production分支.
 func pullProductionBranch(branch string) (bool, error) {
 	// clone仓库,如果已经克隆,忽略
-	execCommand(CacheDir, "", "git", "clone", "git@218.17.101.103:java/hl.main.git")
+	execCommand(utility.CacheDir, "", "git", "clone", "git@218.17.101.103:java/hl.main.git")
 
 	// 切换到指定分支,并做一次更新,保证代码是最新的
 	execCommand(_mainDir, "", "git", "checkout", "-b", branch, "origin/" + branch)
@@ -502,14 +526,14 @@ func pullProductionBranch(branch string) (bool, error) {
 // 编译项目,拉取依赖.
 func compile(upToDate bool, branch string) error {
 	if _, erc := os.Stat(_compiledPath); upToDate && erc == nil {
-		Logger.Info(fmt.Sprintf("项目分支%s是最新版本,并且已经编译过,跳过编译.", branch))
+		utility.Logger.Info(fmt.Sprintf("项目分支%s是最新版本,并且已经编译过,跳过编译.", branch))
 		return nil
 	}
 
 	// 排序
 	var keysOrderBy []int
-	keysOrderByMap := make(map[int]string, len(modules))
-	for key, value := range modules {
+	keysOrderByMap := make(map[int]string, len(_modules))
+	for key, value := range _modules {
 		keysOrderBy = append(keysOrderBy, value["orderBy"].(int))
 		keysOrderByMap[value["orderBy"].(int)] = key
 	}
@@ -517,11 +541,11 @@ func compile(upToDate bool, branch string) error {
 	sort.Ints(keysOrderBy)
 
 	// 编译
-	Logger.Info("开始前置项目串行编译...")
+	utility.Logger.Info("开始前置项目串行编译...")
 	for _, item := range keysOrderBy {
-		value := modules[keysOrderByMap[item]]
+		value := _modules[keysOrderByMap[item]]
 		if v, ok := value["forFix"].(bool); ok && !v {
-			Logger.Info(fmt.Sprintf("编译项目[%s]...", value["name"]))
+			utility.Logger.Info(fmt.Sprintf("编译项目[%s]...", value["name"]))
 			r, n := value["relativePath"].(string), value["name"].(string)
 			if r[0:(len(r) - len(n))] == "" {
 				if _, err := execCommand(_mainDir + string(os.PathSeparator)+value["name"].(string), "", "mvn", "install"); err != nil {
@@ -535,19 +559,19 @@ func compile(upToDate bool, branch string) error {
 		}
 	}
 
-	Logger.Info("开始项目并行编译...")
+	utility.Logger.Info("开始项目并行编译...")
 	var wg sync.WaitGroup
 	ch := make(chan error)
 	for _, item := range keysOrderBy {
-		value := modules[keysOrderByMap[item]]
+		value := _modules[keysOrderByMap[item]]
 		if _, ok := value["forFix"].(map[string][]string); ok {
 			r, n := value["relativePath"].(string), value["name"].(string)
-			Logger.Info(fmt.Sprintf("编译项目[%s]在目录[%s]中...", value["name"], r[0:(len(r) - len(n))]))
+			utility.Logger.Info(fmt.Sprintf("编译项目[%s]在目录[%s]中...", value["name"], r[0:(len(r) - len(n))]))
 			wg.Add(1)
 			go func(dir string, v map[string]interface{}) {
 				defer wg.Done()
 				if dir == "" {
-					if _, err := execCommand(_mainDir + string(os.PathSeparator), "", "mvn", "install", "-f", CacheDir+"/hl.main/"+v["name"].(string)+"/pom.xml"); err != nil {
+					if _, err := execCommand(_mainDir + string(os.PathSeparator), "", "mvn", "install", "-f", utility.CacheDir+"/hl.main/"+v["name"].(string)+"/pom.xml"); err != nil {
 						ch <- err
 					}
 				} else {
@@ -581,7 +605,7 @@ func compile(upToDate bool, branch string) error {
 // 上载文件.
 func upload(command string, env string, rip2dir map[string]string, classAs string) error {
 	// 上载class文件到对应服务的集群部署目录
-	if err := uploadClassFileToCluster(modules[command], env, rip2dir, classAs); err != nil {
+	if err := uploadClassFileToCluster(_modules[command], env, rip2dir, classAs); err != nil {
 		return err
 	}
 
@@ -730,7 +754,7 @@ func uploadClassFileToHost(localPath, iport, remotePath string) error {
 	if err___ != nil && err___ != io.EOF {
 		return err___
 	}
-	Logger.Info(fmt.Sprintf(" 上传本地文件%s到远程主机%s的指定目录%s成功,传输大小%d字节.", localPath, iport, remotePath, size))
+	utility.Logger.Info(fmt.Sprintf(" 上传本地文件%s到远程主机%s的指定目录%s成功,传输大小%d字节.", localPath, iport, remotePath, size))
 	return nil
 }
 
@@ -761,7 +785,7 @@ func createSshTunnel(ip string, port string, scene string) (*ssh.Client, error) 
 			return nil, errors.New(fmt.Sprintf("[%s]连接%s时候发生异常:%s.", scene, addr, err))
 		}
 
-		Logger.Warn(fmt.Sprintf("[%s]连接%s鉴权失败,重新输入用户名密码.", scene, addr))
+		utility.Logger.Warn(fmt.Sprintf("[%s]连接%s鉴权失败,重新输入用户名密码.", scene, addr))
 
 		// 自定义错误输出模板
 		core.ErrorTemplate = `[` + scene + `]{{color "red"}}{{ ErrorIcon }} 抱歉, 输入无效: {{.Error}}{{color "reset"}}
@@ -815,24 +839,24 @@ func buildConnectContext(user, password string) *ssh.ClientConfig {
 // 执行命令.
 func execCommand(toDir string, matchStr string, command string, params ...string) (bool, error) {
 	if err := os.Chdir(toDir); err != nil {
-		Logger.Fatal(err)
+		utility.Logger.Fatal(err)
 		return false, err
 	}
 
 	commandAs := exec.Command(command, params...)
-	Logger.Info("执行", commandAs.Args)
+	utility.Logger.Info("执行", commandAs.Args)
 
 	out, err := commandAs.StdoutPipe()
 	defer out.Close()
 	if err != nil {
-		Logger.Fatal(fmt.Sprintf("执行命令%s时候获取标准输出通道失败.", err))
+		utility.Logger.Fatal(fmt.Sprintf("执行命令%s时候获取标准输出通道失败.", err))
 		return false, err
 	}
 
 	outForErr, err_ := commandAs.StderrPipe()
 	defer out.Close()
 	if err_ != nil {
-		Logger.Fatal(fmt.Sprintf("执行命令%s时候获取错误输出通道失败.", err))
+		utility.Logger.Fatal(fmt.Sprintf("执行命令%s时候获取错误输出通道失败.", err))
 		return false, err_
 	}
 
@@ -850,7 +874,7 @@ func execCommand(toDir string, matchStr string, command string, params ...string
 		if matchStr != "" && strings.HasPrefix(line, matchStr) {
 			upToDate = true
 		}
-		Logger.Info(line)
+		utility.Logger.Info(line)
 	}
 	//}()
 
@@ -861,13 +885,13 @@ func execCommand(toDir string, matchStr string, command string, params ...string
 		if err__ != nil || err_ == io.EOF {
 			break
 		}
-		Logger.Info(line)
+		utility.Logger.Info(line)
 	}
 	//}()
 
 	if err__ := commandAs.Wait(); err__ != nil {
 		if strings.HasSuffix(err__.Error(), "not started") {
-			Logger.Error(fmt.Sprintf("命令%s不存在.", command))
+			utility.Logger.Error(fmt.Sprintf("命令%s不存在.", command))
 		}
 		return upToDate, err__
 	}
@@ -898,3 +922,5 @@ func requiredWithMessage(message string) func(val interface{}) error {
 		return nil
 	}
 }
+
+

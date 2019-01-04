@@ -5,6 +5,10 @@ import (
 	"hongling/utility"
 	"os"
 	"gopkg.in/urfave/cli.v2"
+	"hongling/execjava"
+	"hongling/drds"
+	"hongling/generator"
+	"hongling/menu"
 )
 
 func main() {
@@ -24,10 +28,10 @@ func main() {
 				Value:   utility.DEV,
 			},
 		},
-		Action: utility.Menu,
+		Action: menu.BuildMenu,
 	}
 
-	app.Commands = []*cli.Command{utility.DrdsCommand, utility.ArchetypeCommand, utility.ExecjavaCommand}
+	app.Commands = []*cli.Command{drds.DrdsCommand, generator.ArchetypeCommand, execjava.ExecJavaCommand}
 
 	err := app.Run(os.Args)
 	if err != nil {

@@ -1,4 +1,4 @@
-package utility
+package execjava
 
 import (
 	"io"
