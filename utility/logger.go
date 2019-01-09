@@ -4,7 +4,6 @@ import (
 	"github.com/lestrrat-go/file-rotatelogs"
 	"time"
 	"fmt"
-	"github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
 	"github.com/rifflock/lfshook"
 	"os/user"
@@ -14,17 +13,6 @@ import (
 )
 
 var Logger *logrus.Entry
-
-var CacheDir = getCacheDir()
-
-func getCacheDir() string {
-	userdir, err := homedir.Dir()
-	if err != nil {
-		userdir = "." + string(os.PathSeparator)
-	}
-
-	return fmt.Sprintf("%s%s.utility%s", userdir, string(os.PathSeparator), string(os.PathSeparator))
-}
 
 // 初始化logger.
 func init() {

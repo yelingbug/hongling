@@ -9,14 +9,16 @@ import (
 
 type Suggestion interface {
 	Get() string
-	Export(document prompt.Document, args...string) []prompt.Suggest
+	Export(document prompt.Document) []prompt.Suggest
+	Process()
+	Validate() error
 }
 
 var menuCommands = make(map[string]Suggestion)
 var suggests []prompt.Suggest
 
 func AddMenuCommand(name, description string, suggestion Suggestion) {
-	suggests = append(suggests, prompt.Suggest{Text:name, Description:description})
+	suggests = append(suggests, prompt.Suggest{Text: name, Description: description})
 	menuCommands[name] = suggestion
 }
 
@@ -26,6 +28,7 @@ func BuildMenu(context *cli.Context) error {
 		completer,
 		prompt.OptionTitle("Utility by Yelin.G"),
 		prompt.OptionHistory([]string{"SELECT * FROM users;"}),
+		prompt.OptionMaxSuggestion(6),
 		prompt.OptionPrefix(">>> "),
 		prompt.OptionLivePrefix(prefix),
 		prompt.OptionPrefixTextColor(prompt.Yellow),
@@ -46,11 +49,8 @@ func completer(in prompt.Document) []prompt.Suggest {
 	// 找到第一个命令
 	args := strings.Split(text, " ")
 	rootCommand := strings.TrimSpace(args[0])
-	if _, _ok := menuCommands[rootCommand]; (_ok && len(args) == 1 && in.GetWordBeforeCursor() == ""/*增加这个判断处理输入命令之后再输入一个空格才会出现后面的提示*/) || len(args) > 1 {
-		// 命令存在,指派到具体的接口实现中去获取Suggest;不存在,返回空.
-		if value, ok := menuCommands[rootCommand]; ok {
-			return value.Export(in, args[1:]...)
-		}
+	if value, ok := menuCommands[rootCommand]; ok {
+		return value.Export(in)
 	}
 	return prompt.FilterHasPrefix(suggests, in.GetWordBeforeCursor(), true)
 }
@@ -60,6 +60,20 @@ func prefix() (string, bool) {
 }
 
 func process(text string) {
-	fmt.Println(text)
+	textAfterFixed := strings.TrimSpace(text)
+	if textAfterFixed == "" {
+		fmt.Println("你是在搞笑吗?")
+		return
+	}
+	args := strings.Split(textAfterFixed, " ")
+	if value, ok := menuCommands[args[0]]; ok {
+		if err := value.Validate(); err == nil {
+			value.Process()
+		} else {
+			fmt.Println(err)
+		}
+	} else {
+		fmt.Println("输入无效.")
+	}
 	return
 }

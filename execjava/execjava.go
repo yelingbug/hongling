@@ -30,7 +30,7 @@ const (
 )
 
 const (
-	_user     = "yelin.g"
+	_user     = "admin"
 	_password = "hi, hongling"
 
 	_command = "execjava"
@@ -43,7 +43,7 @@ var _modules = map[string]map[string]interface{}{
 		"relativePath": "common",
 		"forFix":       false,
 		"priority":     _whoami,
-		"description": "全局公共接口和基础数据定义.",
+		"description":  "全局公共接口和基础数据定义.",
 	},
 
 	/*"mcommon": {
@@ -56,7 +56,7 @@ var _modules = map[string]map[string]interface{}{
 		"relativePath": "message-center/mc-hsf-client",
 		"forFix":       false,
 		"priority":     _whoareu,
-		"description": "消息HSF客户端定义.",
+		"description":  "消息HSF客户端定义.",
 	},
 	/*"ucommon": {
 		"relativePath": "user-center/uc-common",
@@ -68,7 +68,7 @@ var _modules = map[string]map[string]interface{}{
 		"relativePath": "user-center/uc-hsf-client",
 		"forFix":       false,
 		"priority":     _whoareu,
-		"description": "用户基础信息HSF客户端定义.",
+		"description":  "用户基础信息HSF客户端定义.",
 	},
 	/*"uacommon": {
 		"relativePath": "user-account-center/uac-common",
@@ -80,7 +80,7 @@ var _modules = map[string]map[string]interface{}{
 		"relativePath": "user-account-center/uac-hsf-client",
 		"forFix":       false,
 		"priority":     _whoareu,
-		"description": "资金交易HSF客户端定义.",
+		"description":  "资金交易HSF客户端定义.",
 	},
 	"ssoclient": {
 		"orderBy":      5,
@@ -88,7 +88,7 @@ var _modules = map[string]map[string]interface{}{
 		"relativePath": "single-sign-on/sso-client",
 		"forFix":       false,
 		"priority":     _whoareu,
-		"description": "单点登录HSF客户端定义.",
+		"description":  "单点登录HSF客户端定义.",
 	},
 	"tcbidclient": {
 		"orderBy":      6,
@@ -96,7 +96,7 @@ var _modules = map[string]map[string]interface{}{
 		"relativePath": "transaction/trans-bidding-hsf-client",
 		"forFix":       false,
 		"priority":     _whoareu,
-		"description": "核心交易HSF客户端定义.",
+		"description":  "核心交易HSF客户端定义.",
 	},
 	"tcothersclient": {
 		"orderBy":      7,
@@ -104,7 +104,7 @@ var _modules = map[string]map[string]interface{}{
 		"relativePath": "transaction/trans-others-client",
 		"forFix":       false,
 		"priority":     _whoareu,
-		"description": "第三方或者其他交易HSF客户端定义.",
+		"description":  "第三方或者其他交易HSF客户端定义.",
 	},
 	"tcrepayclient": {
 		"orderBy":      8,
@@ -112,7 +112,7 @@ var _modules = map[string]map[string]interface{}{
 		"relativePath": "transaction/trans-repayment-hsf-client",
 		"forFix":       false,
 		"priority":     _whoareu,
-		"description": "还款HSF客户端定义.",
+		"description":  "还款HSF客户端定义.",
 	},
 	"tctransclient": {
 		"orderBy":      9,
@@ -120,7 +120,7 @@ var _modules = map[string]map[string]interface{}{
 		"relativePath": "transaction/trans-transfer-hsf-client",
 		"forFix":       false,
 		"priority":     _whoareu,
-		"description": "债权转让HSF客户端定义.",
+		"description":  "债权转让HSF客户端定义.",
 	},
 	"ptclient": {
 		"orderBy":      10,
@@ -128,7 +128,7 @@ var _modules = map[string]map[string]interface{}{
 		"relativePath": "portal/portal-hsf-client",
 		"forFix":       false,
 		"priority":     _whoareu,
-		"description": "主站(portal)HSF客户端定义.",
+		"description":  "主站(portal)HSF客户端定义.",
 	},
 	"yxclient": {
 		"orderBy":      11,
@@ -136,7 +136,7 @@ var _modules = map[string]map[string]interface{}{
 		"relativePath": "youxuan/youxuan-hsf-client",
 		"forFix":       false,
 		"priority":     _whoareu,
-		"description": "优选HSF客户端定义.",
+		"description":  "优选HSF客户端定义.",
 	},
 	"tcore": {
 		"orderBy":      12,
@@ -144,7 +144,7 @@ var _modules = map[string]map[string]interface{}{
 		"relativePath": "transaction/trans-core",
 		"forFix":       false,
 		"priority":     _whoareu,
-		"description": "核心交易公共包.",
+		"description":  "核心交易公共包.",
 	},
 
 	"uc": {
@@ -248,6 +248,14 @@ var _modules = map[string]map[string]interface{}{
 	},
 }
 
+var (
+	_flags       = []string{"r", "b"}
+	_flagsDetail = map[string]string{
+		_flags[0]: "远程服务器上项目部署的根目录,格式:<ip>:<目录>,如果所有服务器的目录相同,可以忽略ip,即:<目录>.",
+		_flags[1]: "项目分支,只能是pre-production或者production分之,缺省为production.",
+	}
+)
+
 var ExecJavaCommand = &cli.Command{
 	Name:     _command,
 	Category: "应用修复",
@@ -256,19 +264,24 @@ var ExecJavaCommand = &cli.Command{
 	Action:   execJavaUsage,
 	Flags: []cli.Flag{
 		&cli.StringFlag{
-			Name:  "r",
-			Usage: "远程服务器上项目部署的根目录,格式:<ip>:<目录>,如果所有服务器的目录相同,可以忽略ip,即:<目录>.",
+			Name:  _flags[0],
+			Usage: _flagsDetail[_flags[0]],
 		},
 		&cli.StringFlag{
-			Name:  "b",
-			Usage: "项目分支,只能是pre-production或者production分之,缺省为production.",
-			Value:"production",
+			Name:  _flags[1],
+			Usage: _flagsDetail[_flags[1]],
+			Value: "production",
+		},
+		&cli.BoolFlag{
+			Name:  "key",
+			Usage: "默认情况下通过密码和服务器交互,如果设置了这个值,则通过key和服务器交互.",
+			Value: false,
 		},
 	},
 }
 
 var _mainDir = utility.CacheDir + "hl.main"
-var _compiledPath = utility.CacheDir+ string(os.PathSeparator) + "hl.main.compiled"
+var _compiledPath = utility.CacheDir + string(os.PathSeparator) + "hl.main.compiled"
 
 func init() {
 	for key, value := range _modules {
@@ -335,7 +348,7 @@ func execJava(c *cli.Context) error {
 		env = utility.TEST
 	}
 
-	rdirs := c.String("r")
+	rdirs := c.String(_flags[0])
 	if rdirs == "" {
 		rdirs = _remoteDirs[env]
 		utility.Logger.Info(fmt.Sprintf("没有指定远程服务器项目的部署根目录,缺省为[%s].", rdirs))
@@ -346,13 +359,17 @@ func execJava(c *cli.Context) error {
 		return nil
 	}
 
-	branch := c.String("b")
+	branch := c.String(_flags[1])
 	if branch != "pre-production" && branch != "production" {
 		utility.Logger.Info("指定的分支不是pre-production或者production,默认为production")
 		branch = "production"
 	}
 
-	var upToDate bool
+	key := c.Bool("key")
+
+	return execJava_(c.Command.Name, env, branch, rdirs, c.Args().First(), key)
+
+	/*var upToDate bool
 	if upToDate, err = pullProductionBranch(branch); err != nil {
 		utility.Logger.Error(fmt.Sprintf("拉取%s分之失败:[%s].", branch, err))
 		return err
@@ -374,13 +391,13 @@ func execJava(c *cli.Context) error {
 
 	if err := execute(c.Command.Name, env, rip2dir, c.Args().First()); err != nil {
 		return err
-	}
+	}*/
 
 	//connect("104.128.237.136", 57896)
 	//uploadClassFileToHost("./main", "104.128.237.136@57896", "/root/main")
 
 	/*var sftpClient *sftp.Client
-	if sshClient, err := createSshTunnel("104.128.237.136", "57896"); err != nil {
+	if sshClient, err := createSshTunnelByPassword("104.128.237.136", "57896"); err != nil {
 		return err
 	} else {
 		var err_ error
@@ -409,8 +426,37 @@ func execJava(c *cli.Context) error {
 	return nil
 }
 
+func execJava_(command string, env string, branch string, rdirs string, classAs string, key bool) error {
+	var err error
+	var upToDate bool
+	if upToDate, err = pullProductionBranch(branch); err != nil {
+		utility.Logger.Error(fmt.Sprintf("拉取%s分之失败:[%s].", branch, err))
+		return err
+	}
+
+	if err := compile(upToDate, branch); err != nil {
+		utility.Logger.Error(fmt.Sprintf("编译项目失败:[%s].", err))
+		return err
+	}
+
+	rip2dir, err := parse(rdirs)
+	if err != nil {
+		return err
+	}
+
+	if err := upload(command, env, rip2dir, classAs, key); err != nil {
+		return err
+	}
+
+	if err := execute(command, env, rip2dir, classAs, key); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // 通过内网调用远程服务http接口执行命令.
-func execute(command, env string, rip2dir map[string]string, class string) error {
+func execute(command, env string, rip2dir map[string]string, class string, key bool) error {
 	// 随机选择一台服务器.
 	cluster := _modules[command]["forFix"].(map[string][]string)[env]
 	rand.Seed(time.Now().Unix())
@@ -424,7 +470,6 @@ func execute(command, env string, rip2dir map[string]string, class string) error
 	if len(iportAfterSplitted) != 2 {
 		return errors.New(fmt.Sprintf("预定义服务器ip端口%s格式错误.", iport))
 	}
-
 
 	// 准备http post请求,送出class类路径字符串
 	ip, port := strings.TrimSpace(iportAfterSplitted[0]), strings.TrimSpace(iportAfterSplitted[1])
@@ -454,15 +499,26 @@ func execute(command, env string, rip2dir map[string]string, class string) error
 		}
 	}
 
+	var (
+		sshClient      *ssh.Client
+		sshClientError error
+	)
 	var sftpClient *sftp.Client
-	if sshClient, err := createSshTunnel(ip, port, "监控执行结果"); err != nil {
-		return err
+
+	if key {
+		sshClient, sshClientError = createSshTunnelByPublicKey(ip, port, "监控执行结果")
 	} else {
-		var err_ error
-		if sftpClient, err_ = createSftpClient(sshClient); err_ != nil {
-			return err_
-		}
+		sshClient, sshClientError = createSshTunnelByPassword(ip, port, "监控执行结果")
 	}
+	if sshClientError != nil {
+		return errors.New(fmt.Sprintf("监控执行结果时连接远程服务器失败:%s", sshClientError))
+	}
+
+	var err_ error
+	if sftpClient, err_ = createSftpClient(sshClient); err_ != nil {
+		return err_
+	}
+
 	defer sftpClient.Close()
 
 	classIndex := strings.LastIndex(class, ".")
@@ -497,7 +553,7 @@ func execute(command, env string, rip2dir map[string]string, class string) error
 		} else {
 			return errors.New(fmt.Sprintf("尝试打开远程服务进程处理日志失败:%s", err))
 		}
-		<- timer.C
+		<-timer.C
 		timeout++
 		if timeout == 30 {
 			utility.Logger.Info(fmt.Sprintf("等待远程服务进程处理结果超过1分钟,请自行前往服务器%s相应目录下查看结果.", ip))
@@ -515,7 +571,7 @@ func pullProductionBranch(branch string) (bool, error) {
 	execCommand(utility.CacheDir, "", "git", "clone", "git@218.17.101.103:java/hl.main.git")
 
 	// 切换到指定分支,并做一次更新,保证代码是最新的
-	execCommand(_mainDir, "", "git", "checkout", "-b", branch, "origin/" + branch)
+	execCommand(_mainDir, "", "git", "checkout", "-b", branch, "origin/"+branch)
 	if upToDate, err := execCommand(_mainDir, "Already up to date", "git", "pull"); err != nil {
 		return false, err
 	} else {
@@ -548,11 +604,11 @@ func compile(upToDate bool, branch string) error {
 			utility.Logger.Info(fmt.Sprintf("编译项目[%s]...", value["name"]))
 			r, n := value["relativePath"].(string), value["name"].(string)
 			if r[0:(len(r) - len(n))] == "" {
-				if _, err := execCommand(_mainDir + string(os.PathSeparator)+value["name"].(string), "", "mvn", "install"); err != nil {
+				if _, err := execCommand(_mainDir+string(os.PathSeparator)+value["name"].(string), "", "mvn", "install"); err != nil {
 					return err
 				}
 			} else {
-				if _, err := execCommand(_mainDir + string(os.PathSeparator)+r[0:(len(r) - len(n))], "", "mvn", "-am", "-pl", value["name"].(string), "install"); err != nil {
+				if _, err := execCommand(_mainDir+string(os.PathSeparator)+r[0:(len(r) - len(n))], "", "mvn", "-am", "-pl", value["name"].(string), "install"); err != nil {
 					return nil
 				}
 			}
@@ -571,11 +627,11 @@ func compile(upToDate bool, branch string) error {
 			go func(dir string, v map[string]interface{}) {
 				defer wg.Done()
 				if dir == "" {
-					if _, err := execCommand(_mainDir + string(os.PathSeparator), "", "mvn", "install", "-f", utility.CacheDir+"/hl.main/"+v["name"].(string)+"/pom.xml"); err != nil {
+					if _, err := execCommand(_mainDir+string(os.PathSeparator), "", "mvn", "install", "-f", utility.CacheDir+"/hl.main/"+v["name"].(string)+"/pom.xml"); err != nil {
 						ch <- err
 					}
 				} else {
-					if _, err := execCommand(_mainDir + string(os.PathSeparator), "", "mvn", "-am", "-pl", v["name"].(string), "install", "-f", _mainDir + string(os.PathSeparator)+dir+"pom.xml"); err != nil {
+					if _, err := execCommand(_mainDir+string(os.PathSeparator), "", "mvn", "-am", "-pl", v["name"].(string), "install", "-f", _mainDir+string(os.PathSeparator)+dir+"pom.xml"); err != nil {
 						ch <- err
 					}
 				}
@@ -603,9 +659,9 @@ func compile(upToDate bool, branch string) error {
 }
 
 // 上载文件.
-func upload(command string, env string, rip2dir map[string]string, classAs string) error {
+func upload(command string, env string, rip2dir map[string]string, classAs string, key bool) error {
 	// 上载class文件到对应服务的集群部署目录
-	if err := uploadClassFileToCluster(_modules[command], env, rip2dir, classAs); err != nil {
+	if err := uploadClassFileToCluster(_modules[command], env, rip2dir, classAs, key); err != nil {
 		return err
 	}
 
@@ -668,12 +724,12 @@ func parse(rdirs string) (map[string]string, error) {
 }
 
 // 上载类文件到集群指定的目录.
-func uploadClassFileToCluster(module map[string]interface{}, env string, rdirs map[string]string, classAs string) error {
+func uploadClassFileToCluster(module map[string]interface{}, env string, rdirs map[string]string, classAs string, key bool) error {
 	// 将类路径转换为class文件的绝对路径
 	classFilePath := strings.Replace(classAs, ".", string(os.PathSeparator), -1) + ".class"
 	classFileLocalPath := _mainDir + string(os.PathSeparator) + module["relativePath"].(string) + string(os.PathSeparator) + "target" + string(os.PathSeparator) + "classes" + string(os.PathSeparator) + classFilePath
 	for k, v := range getRemotePathForClass(module, env, rdirs, classFilePath) {
-		if err := uploadClassFileToHost(classFileLocalPath, k, v); err != nil {
+		if err := uploadClassFileToHost(classFileLocalPath, k, v, key); err != nil {
 			return err
 		}
 	}
@@ -718,7 +774,7 @@ func getRemotePathForClass(module map[string]interface{}, env string, rdirs map[
 }
 
 // 通过ssh传送文件到远程服务器指定目录.
-func uploadClassFileToHost(localPath, iport, remotePath string) error {
+func uploadClassFileToHost(localPath, iport, remotePath string, key bool) error {
 	iportAfterSplitted := strings.Split(iport, "@")
 	if len(iportAfterSplitted) != 2 {
 		return errors.New(fmt.Sprintf("预定义服务器ip端口%s格式错误.", iport))
@@ -727,15 +783,28 @@ func uploadClassFileToHost(localPath, iport, remotePath string) error {
 	ip, port := iportAfterSplitted[0], iportAfterSplitted[1]
 
 	var sftpClient *sftp.Client
-	if sshClient, err := createSshTunnel(ip, port, "上传Class文件"); err != nil {
-		return err
+
+	var (
+		sshClient      *ssh.Client
+		sshClientError error
+	)
+
+	if key {
+		sshClient, sshClientError = createSshTunnelByPublicKey(ip, port, "上传Class文件")
 	} else {
-		var _err error
-		sftpClient, _err = createSftpClient(sshClient)
-		if _err != nil {
-			return _err
-		}
+		sshClient, sshClientError = createSshTunnelByPassword(ip, port, "上传Class文件")
 	}
+
+	if sshClientError != nil {
+		return errors.New(fmt.Sprintf("传送文件时连接远程服务器失败:%s", sshClientError))
+	}
+
+	var _err error
+	sftpClient, _err = createSftpClient(sshClient)
+	if _err != nil {
+		return _err
+	}
+
 	defer sftpClient.Close()
 
 	l, err_ := os.Open(localPath)
@@ -758,8 +827,8 @@ func uploadClassFileToHost(localPath, iport, remotePath string) error {
 	return nil
 }
 
-// 连接远程主机
-func createSshTunnel(ip string, port string, scene string) (*ssh.Client, error) {
+// 连接远程主机(通过用户名密码)
+func createSshTunnelByPassword(ip string, port string, scene string) (*ssh.Client, error) {
 	var (
 		sshClient *ssh.Client
 		err       error
@@ -775,7 +844,7 @@ func createSshTunnel(ip string, port string, scene string) (*ssh.Client, error) 
 	}{_user, _password}
 
 	for {
-		sshClient, err = ssh.Dial("tcp", addr, buildConnectContext(auth.User, auth.Password))
+		sshClient, err = ssh.Dial("tcp", addr, buildConnectContextByPassword(auth.User, auth.Password))
 		if err == nil {
 			return sshClient, nil
 		}
@@ -814,6 +883,35 @@ func createSshTunnel(ip string, port string, scene string) (*ssh.Client, error) 
 	}
 }
 
+// 连接远程主机(通过key)
+func createSshTunnelByPublicKey(ip string, port string, scene string) (*ssh.Client, error) {
+	var (
+		sshClient *ssh.Client
+		err       error
+	)
+
+	// 连接
+	addr := fmt.Sprintf("%s:%s", ip, port)
+
+	// 读本地私有key文件
+	buffer, err := ioutil.ReadFile(utility.GetUserDir() + ".ssh" + string(os.PathSeparator) + "id_rsa")
+	if err != nil {
+		return nil, err
+	}
+
+	// 构造key
+	key, err := ssh.ParsePrivateKey(buffer)
+	if err != nil {
+		return nil, err
+	}
+
+	sshClient, err = ssh.Dial("tcp", addr, buildConnectContextByPublicKey(_user, key))
+	if err != nil {
+		return nil, err
+	}
+	return sshClient, nil
+}
+
 func createSftpClient(client *ssh.Client) (*sftp.Client, error) {
 	// create sftp client
 	if sftpClient, err := sftp.NewClient(client); err != nil {
@@ -823,10 +921,23 @@ func createSftpClient(client *ssh.Client) (*sftp.Client, error) {
 	}
 }
 
-func buildConnectContext(user, password string) *ssh.ClientConfig {
+func buildConnectContextByPassword(user, password string) *ssh.ClientConfig {
 	// 授权
 	auth := make([]ssh.AuthMethod, 0)
 	auth = append(auth, ssh.Password(password))
+
+	return &ssh.ClientConfig{
+		User:            user,
+		Auth:            auth,
+		Timeout:         30 * time.Second,
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+	}
+}
+
+func buildConnectContextByPublicKey(user string, key ssh.Signer) *ssh.ClientConfig {
+	// 授权
+	auth := make([]ssh.AuthMethod, 0)
+	auth = append(auth, ssh.PublicKeys(key))
 
 	return &ssh.ClientConfig{
 		User:            user,
@@ -922,5 +1033,3 @@ func requiredWithMessage(message string) func(val interface{}) error {
 		return nil
 	}
 }
-
-
